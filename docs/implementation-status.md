@@ -41,6 +41,16 @@
 - **593 tests passing**, 0 failures/errors/skips. Concurrency test records 8,000 calls on eight threads while replacing the spec 200 times and verifies exact report/check parameter identity. Two additional checks show recording does not acquire the edit monitor and editing finishes while recording is deliberately blocked.
 - All changes remain in the local prototype; no remote or uploads.
 
+## Checkpoint 5 — primary UI and real GUI smoke
+
+- Added the kind-driven Specification tab with grouped item table, add/edit/remove, dynamic fields, path-variable choices, numeric ranges, Required, atomic edits, confirmations and localized validation errors.
+- Added Check column, invalid-only filtering, filtered ✓/✗ counts, request/check/response details, shared escaped diagnostics and specification/compliance documentation. Full body applies to request and response details; request headers remain fully visible.
+- **599 tests passing**, 0 failures/errors/skips; formatter and packaging pass. Existing documentation assertions were updated only where US11 deliberately adds captured request URLs/blocks; response-body exclusion and header wrapping remain asserted.
+- Real ZAP UI smoke passed using an opt-in acceptance agent and a temporary loopback fixture, operating through actual Swing fields/buttons. It verified empty neutrality, adding/editing an Integer spec, rejudging old calls, valid/invalid marks, filtering and selected-call diagnostics. It also opened documentation and exercised light/dark themes plus a 1150×800 window.
+- Screenshots inspected under `.local/ui-smoke/`: `specification-light.png`, `checks-light.png`, `checks-dark.png`, `documentation-dark.png`, `specification-compact-dark.png`. No real user traffic is in these fixtures.
+- Visual testing found and fixed two issues: ZAP disables HTML labels (tree now paints native coloured counts), and the initial splitter starved the editor (explicit editor/table sizing now keeps the complete numeric form usable in the compact window).
+- The smoke agent is test tooling only, excluded from the add-on; normal startup never seeds namespaces or specs. Run with `scripts/ui-smoke.sh` only after stopping the prototype instance. Existing ZAP on port 8080 remains untouched.
+
 ## Pending
 
-Complete primary UI, unmatched paths, deterministic demo and full US11 acceptance are not yet implemented. Manual GUI acceptance and final per-class coverage gates remain pending.
+Unmatched paths, persistent demo scripts/documentation and full per-case acceptance/coverage are not yet finished. Remaining manual cases, including help availability and human review of interaction ergonomics, must be reported separately from the automated GUI smoke.

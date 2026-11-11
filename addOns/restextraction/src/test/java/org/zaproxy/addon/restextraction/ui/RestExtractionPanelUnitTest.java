@@ -66,11 +66,15 @@ import org.junit.jupiter.api.Test;
 import org.zaproxy.addon.restextraction.ExtensionRestExtraction;
 import org.zaproxy.addon.restextraction.model.ApiCall;
 import org.zaproxy.addon.restextraction.model.ApiNamespace;
+import org.zaproxy.addon.restextraction.model.ArgumentLocation;
 import org.zaproxy.addon.restextraction.model.BodyState;
 import org.zaproxy.addon.restextraction.model.Header;
 import org.zaproxy.addon.restextraction.model.HttpMethod;
+import org.zaproxy.addon.restextraction.model.IntegerType;
+import org.zaproxy.addon.restextraction.model.ParameterSpec;
 import org.zaproxy.addon.restextraction.model.RequestData;
 import org.zaproxy.addon.restextraction.model.RestExtractor;
+import org.zaproxy.addon.restextraction.model.SpecItem;
 import org.zaproxy.zap.testutils.TestUtils;
 
 /** Unit test for {@link RestExtractionPanel}, with a real extractor. */
@@ -784,6 +788,46 @@ class RestExtractionPanelUnitTest extends TestUtils {
     }
 
     @Test
+    void shouldShowRejudgedChecksAndOnlyInvalidFilter() throws Exception {
+        onSwingThread(
+                () -> {
+                    addStartedNamespace();
+                    select(childrenOf(namespaceNodes().get(0)).get(0));
+                    assertThat(((JTabbedPane) find(panel, "tabs")).isEnabledAt(2), is(true));
+                    extractor.addSpecItem(
+                            selectedNamespace(),
+                            TEMPLATE,
+                            SpecItem.parameter(
+                                    HttpMethod.GET,
+                                    new ParameterSpec(
+                                            ArgumentLocation.PATH,
+                                            "POST_ID",
+                                            new IntegerType(null, null),
+                                            false)));
+                });
+        extractor.record(call("/posts/1/comments"));
+        extractor.record(call("/posts/abc/comments"));
+        waitForRows(2);
+        onSwingThread(
+                () -> {
+                    JTable calls = (JTable) find(panel, "calls");
+                    assertThat(calls.getValueAt(0, 5), is("✓"));
+                    assertThat(calls.getValueAt(1, 5), is("✗ 1"));
+                    ((JCheckBox) find(panel, "onlyInvalid")).doClick();
+                    assertThat(calls.getRowCount(), is(1));
+                    calls.setRowSelectionInterval(0, 0);
+                    assertThat(detail(), containsString("expected Integer"));
+                    assertThat(callCount(), containsString("1 of 2 calls"));
+                    assertThat(
+                            labelOf(childrenOf(namespaceNodes().get(0)).get(0)),
+                            containsString("✓ 1"));
+                    extractor.removeSpecItem(
+                            selectedNamespace(), TEMPLATE, SpecItem.method(HttpMethod.GET));
+                });
+        waitForRows(0);
+    }
+
+    @Test
     void shouldShowCapturedRequestInPlainText() throws Exception {
         onSwingThread(this::addStartedNamespace);
         var request =
@@ -807,7 +851,10 @@ class RestExtractionPanelUnitTest extends TestUtils {
                     ((JTable) find(panel, "calls")).setRowSelectionInterval(0, 0);
                     assertThat(detail(), containsString("Request query\ntag=a&tag=b"));
                     assertThat(detail(), containsString("X-Token: <secret>"));
-                    assertThat(detail(), containsString("Request body\n{\"title\":\"Hi\"}"));
+                    assertThat(detail(), containsString("Tick Full body"));
+                    ((JCheckBox) find(panel, "fullBody")).doClick();
+                    assertThat(detail(), containsString("Request body\n{"));
+                    assertThat(detail(), containsString("\"title\": \"Hi\""));
                 });
     }
 

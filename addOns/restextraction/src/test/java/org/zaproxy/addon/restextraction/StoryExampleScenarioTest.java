@@ -103,7 +103,8 @@ class StoryExampleScenarioTest extends TestUtils {
         assertThat(html, containsString("<b>POST</b>, status 201"));
         assertThat(html, not(containsString("/users/1")));
         assertThat(html, not(containsString("request")));
-        assertThat(html, not(containsString("/posts/abcd/comments")));
+        // US11 includes the captured request line, but still excludes response bodies.
+        assertThat(html, containsString("GET " + BASE_URL + "/posts/abcd/comments"));
         assertThat(
                 session.shownBody(namespace, 0, 1),
                 is("{\n  \"request\": \"GET " + BASE_URL + "/posts/abcd/comments\"\n}"));

@@ -6,6 +6,8 @@ gradle.projectsEvaluated {
     if (!runtime || !profile) throw new GradleException('Use scripts/run-prototype.sh')
     rootProject.project(':zap').tasks.named('run', JavaExec) {
         workingDir = file(runtime)
+        def uiAgent = System.getenv('US11_UI_AGENT')
+        if (uiAgent) jvmArgs('-javaagent:' + uiAgent)
         args = ['-dir', profile, '-installdir', runtime,
                 '-host', '127.0.0.1', '-port', System.getenv('US11_PROXY_PORT') ?: '8091',
                 '-config', 'api.disablekey=false', '-config', 'checkForUpdates.checkOnStart=false']

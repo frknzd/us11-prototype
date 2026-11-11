@@ -25,12 +25,15 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import javax.swing.table.AbstractTableModel;
 import org.parosproxy.paros.Constant;
+import org.zaproxy.addon.restextraction.model.Argument;
+import org.zaproxy.addon.restextraction.model.ArgumentLocation;
 import org.zaproxy.addon.restextraction.model.EndpointReport;
 import org.zaproxy.addon.restextraction.model.HttpMethod;
 import org.zaproxy.addon.restextraction.model.RecordedCall;
+import org.zaproxy.addon.restextraction.model.Verdict;
+import org.zaproxy.addon.restextraction.model.VerdictStatus;
 
 /**
  * The calls of the selected namespace or endpoint as rows of a table: time, method, status code,
@@ -40,21 +43,26 @@ public class CallTableModel extends AbstractTableModel {
     private static final long serialVersionUID = 1L;
 
     private static final String PREFIX = "restextraction.calls.column.";
-    private static final String[] COLUMNS = {"time", "method", "status", "endpoint", "arguments"};
+    private static final String[] COLUMNS = {
+        "time", "method", "status", "endpoint", "arguments", "check"
+    };
     private static final DateTimeFormatter TIME =
             DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault());
 
     private transient List<Row> rows = List.of();
+    private boolean hasSpec;
+    private final transient CheckWriter checkWriter = new CheckWriter();
 
     /**
      * Shows the calls of these endpoints. Calls of several endpoints are merged by the time they
      * were made.
      */
     public void setEndpoints(List<EndpointReport> endpoints) {
+        hasSpec = endpoints.stream().anyMatch(e -> !e.getSpec().isEmpty());
         List<Row> newRows = new ArrayList<>();
         for (EndpointReport endpoint : endpoints) {
             for (RecordedCall call : endpoint.getCalls()) {
-                newRows.add(new Row(endpoint.getTemplate(), call));
+                newRows.add(new Row(endpoint.getTemplate(), call, endpoint.getVerdict(call)));
             }
         }
         // A stable sort: calls of one endpoint keep their arrival order.
@@ -69,6 +77,14 @@ public class CallTableModel extends AbstractTableModel {
         } else {
             fireTableDataChanged();
         }
+    }
+
+    public boolean hasSpecification() {
+        return hasSpec;
+    }
+
+    public Verdict getVerdictAt(int row) {
+        return rows.get(row).verdict;
     }
 
     public RecordedCall getCallAt(int row) {
@@ -92,6 +108,11 @@ public class CallTableModel extends AbstractTableModel {
      * @param text text that one of the columns must contain, ignoring case; empty for every call
      */
     public boolean matches(int row, HttpMethod method, String text) {
+        return matches(row, method, text, false);
+    }
+
+    public boolean matches(int row, HttpMethod method, String text, boolean onlyInvalid) {
+        if (onlyInvalid && getVerdictAt(row).getStatus() != VerdictStatus.INVALID) return false;
         if (method != null && rows.get(row).call.getCall().getMethod() != method) {
             return false;
         }
@@ -140,15 +161,27 @@ public class CallTableModel extends AbstractTableModel {
                 return shown.call.getCall().getStatusCode();
             case 3:
                 return shown.template;
-            default:
+            case 4:
                 return argumentsOf(shown.call);
+            default:
+                return checkWriter.mark(shown.verdict);
         }
     }
 
     private static String argumentsOf(RecordedCall call) {
         List<String> arguments = new ArrayList<>();
-        for (Map.Entry<String, String> argument : call.getPathArguments().entrySet()) {
-            arguments.add(argument.getKey() + " = " + argument.getValue());
+        for (Argument argument : call.getArguments()) {
+            if (argument.isContainer()) continue;
+            String location =
+                    argument.getLocation() == ArgumentLocation.PATH
+                            ? ""
+                            : VerificationText.text(
+                                            "location."
+                                                    + argument.getLocation()
+                                                            .name()
+                                                            .toLowerCase(Locale.ROOT))
+                                    + " ";
+            arguments.add(location + argument.getName() + " = " + argument.getValue());
         }
         return String.join(", ", arguments);
     }
@@ -158,9 +191,13 @@ public class CallTableModel extends AbstractTableModel {
             return false;
         }
         for (int i = 0; i < prefix.size(); i++) {
-            if (rows.get(i).call != prefix.get(i).call) {
+            Row current = rows.get(i), previous = prefix.get(i);
+            if (current.call != previous.call) return false;
+            if (current.verdict != previous.verdict
+                    && !(current.verdict.getStatus() == VerdictStatus.NOT_VERIFIED
+                            && previous.verdict.getStatus() == VerdictStatus.NOT_VERIFIED
+                            && current.verdict.isPreflight() == previous.verdict.isPreflight()))
                 return false;
-            }
         }
         return true;
     }
@@ -168,10 +205,12 @@ public class CallTableModel extends AbstractTableModel {
     private static final class Row {
         private final String template;
         private final RecordedCall call;
+        private final Verdict verdict;
 
-        private Row(String template, RecordedCall call) {
+        private Row(String template, RecordedCall call, Verdict verdict) {
             this.template = template;
             this.call = call;
+            this.verdict = verdict;
         }
     }
 }

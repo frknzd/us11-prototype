@@ -30,8 +30,10 @@ import org.parosproxy.paros.Constant;
 import org.zaproxy.addon.restextraction.model.ApiCall;
 import org.zaproxy.addon.restextraction.model.ApiReport;
 import org.zaproxy.addon.restextraction.model.EndpointReport;
+import org.zaproxy.addon.restextraction.model.EndpointSpec;
 import org.zaproxy.addon.restextraction.model.HttpMethod;
 import org.zaproxy.addon.restextraction.model.RecordedCall;
+import org.zaproxy.addon.restextraction.model.Verdict;
 
 /**
  * Turns the report of one namespace into the HTML documentation that the panel shows. It only reads
@@ -50,6 +52,7 @@ public class ApiDocumentationWriter {
     // Swing's HTML view only breaks lines at spaces, so a longer line would widen the whole page.
     private static final int MAX_LINE_LENGTH = 100;
     private static final String INDENT = "  ";
+    private final CheckWriter checkWriter = new CheckWriter();
     private static final Pattern JSON_WORD =
             Pattern.compile("-?\\d+(\\.\\d+)?([eE][+-]?\\d+)?|true|false|null");
 
@@ -80,6 +83,27 @@ public class ApiDocumentationWriter {
     private String writeEndpoint(EndpointReport endpoint) {
         StringBuilder html = new StringBuilder();
         html.append("<h3>").append(escape(endpoint.getTemplate())).append("</h3>");
+        html.append(writeSpec(endpoint.getSpec()));
+        if (!endpoint.getSpec().isEmpty()) {
+            html.append(
+                    paragraph(
+                            escape(
+                                    VerificationText.text(
+                                            "totals",
+                                            endpoint.getValidCount(),
+                                            endpoint.getInvalidCount()))));
+            endpoint.getViolationCounts()
+                    .forEach(
+                            (kind, count) ->
+                                    html.append(
+                                            paragraph(
+                                                    escape(
+                                                            VerificationText.text(
+                                                                            "violationKind."
+                                                                                    + kind.name())
+                                                                    + ": "
+                                                                    + count))));
+        }
         if (endpoint.getCallCounts().isEmpty()) {
             return html.append(paragraph(text("nocalls"))).toString();
         }
@@ -90,12 +114,38 @@ public class ApiDocumentationWriter {
         html.append(paragraph(text("counts", String.join(", ", counts))));
         html.append(writeValues(endpoint));
         for (RecordedCall call : endpoint.getCalls()) {
-            html.append(writeCall(call));
+            html.append(writeCall(call, endpoint.getVerdict(call)));
         }
         return html.toString();
     }
 
-    private String writeCall(RecordedCall recorded) {
+    private String writeSpec(EndpointSpec spec) {
+        if (spec.isEmpty()) return paragraph(escape(VerificationText.text("noSpec")));
+        StringBuilder html =
+                new StringBuilder(
+                        "<h4>" + escape(VerificationText.text("specification")) + "</h4><ul>");
+        for (var item : spec.items()) {
+            String description =
+                    item.getMethod().name()
+                            + " · "
+                            + VerificationText.text("kind." + item.getKind().name());
+            if (item.getParameter() != null) {
+                var p = item.getParameter();
+                description +=
+                        " · "
+                                + p.getName()
+                                + " · "
+                                + p.getType().getName()
+                                + " "
+                                + p.getType().describeRange();
+                if (p.isRequired()) description += " · " + VerificationText.text("field.REQUIRED");
+            } else if (!item.getMediaType().isEmpty()) description += " · " + item.getMediaType();
+            html.append("<li>").append(escape(description)).append("</li>");
+        }
+        return html.append("</ul>").toString();
+    }
+
+    private String writeCall(RecordedCall recorded, Verdict verdict) {
         ApiCall call = recorded.getCall();
         StringBuilder html = new StringBuilder();
         String method = "<b>" + call.getMethod() + "</b>";
@@ -107,6 +157,30 @@ public class ApiDocumentationWriter {
             }
             html.append(paragraph(text("arguments", String.join(", ", arguments))));
         }
+        var request = call.getRequest();
+        html.append(
+                block(
+                        VerificationText.text("request"),
+                        call.getMethod()
+                                + " "
+                                + call.getUrl()
+                                + (request.getQuery().isEmpty() ? "" : "?" + request.getQuery())));
+        if (!request.getQuery().isEmpty())
+            html.append(block(VerificationText.text("requestQuery"), request.getQuery()));
+        if (!request.getHeaders().isEmpty()) {
+            StringBuilder headers = new StringBuilder();
+            for (var h : request.getHeaders())
+                headers.append(h.getName()).append(": ").append(h.getValue()).append('\n');
+            html.append(block(VerificationText.text("requestHeaders"), headers.toString()));
+        }
+        if (request.hasBody())
+            html.append(
+                    block(
+                            VerificationText.text("requestBody"),
+                            formatBody(
+                                    "Content-Type: " + request.getContentType(),
+                                    request.getBody())));
+        html.append(checkWriter.toHtml(verdict));
         html.append(block(text("headers"), call.getResponseHeaders().strip()));
         return html.toString();
     }
@@ -133,7 +207,7 @@ public class ApiDocumentationWriter {
     }
 
     /** Cuts every line that is longer than {@link #MAX_LINE_LENGTH} into lines of that length. */
-    private static String wrap(String text) {
+    public static String wrap(String text) {
         StringBuilder wrapped = new StringBuilder();
         String[] lines = text.split("\n", -1);
         for (int i = 0; i < lines.length; i++) {
@@ -272,7 +346,7 @@ public class ApiDocumentationWriter {
         return Constant.messages.getString(PREFIX + key, arguments);
     }
 
-    private String escape(String text) {
+    public static String escape(String text) {
         return text.replace("&", "&amp;")
                 .replace("<", "&lt;")
                 .replace(">", "&gt;")

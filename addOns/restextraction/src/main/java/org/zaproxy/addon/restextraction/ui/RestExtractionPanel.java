@@ -25,9 +25,11 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Graphics;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -80,11 +82,13 @@ import org.parosproxy.paros.extension.AbstractPanel;
 import org.zaproxy.addon.restextraction.model.ApiCall;
 import org.zaproxy.addon.restextraction.model.ApiNamespace;
 import org.zaproxy.addon.restextraction.model.ApiReport;
+import org.zaproxy.addon.restextraction.model.ArgumentLocation;
 import org.zaproxy.addon.restextraction.model.EndpointReport;
 import org.zaproxy.addon.restextraction.model.ExtractionObserver;
 import org.zaproxy.addon.restextraction.model.HttpMethod;
 import org.zaproxy.addon.restextraction.model.RecordedCall;
 import org.zaproxy.addon.restextraction.model.RestExtractor;
+import org.zaproxy.addon.restextraction.model.VerdictStatus;
 import org.zaproxy.zap.extension.help.ExtensionHelp;
 import org.zaproxy.zap.utils.DisplayUtils;
 
@@ -121,6 +125,9 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
 
     private final transient RestExtractor extractor;
     private final transient ApiDocumentationWriter writer = new ApiDocumentationWriter();
+    private final transient CheckWriter checkWriter = new CheckWriter();
+    private final SpecificationPanel specificationPanel;
+    private final JCheckBox onlyInvalidBox = new JCheckBox(VerificationText.text("onlyInvalid"));
     private boolean showFullBody;
 
     private final JTextField baseUrlField = new JTextField();
@@ -157,6 +164,7 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
     public RestExtractionPanel(RestExtractor extractor) {
         super();
         this.extractor = extractor;
+        specificationPanel = new SpecificationPanel(extractor);
 
         // ZAP uses this name for the UI tab label
         setName(text("title"));
@@ -398,6 +406,8 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
     private void onSelectNamespace() {
         ApiNamespace namespace = selectedNamespace();
         updateButtons(namespace);
+        tabs.setEnabledAt(2, namespace != null && selectedTemplate() != null);
+        specificationPanel.showEndpoint(namespace, selectedTemplate());
         if (namespace == null) {
             callModel.setEndpoints(List.of());
             updateCallCount();
@@ -433,9 +443,19 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
         StringBuilder detail = new StringBuilder();
         var request = call.getRequest();
         if (!request.getQuery().isEmpty() || !request.getHeaders().isEmpty() || request.hasBody()) {
+            String decodedQuery =
+                    selected.getArguments().stream()
+                            .filter(a -> a.getLocation() == ArgumentLocation.QUERY)
+                            .map(a -> a.getName() + "=" + a.getValue())
+                            .collect(java.util.stream.Collectors.joining("&"));
+            detail.append(call.getMethod())
+                    .append(' ')
+                    .append(call.getUrl())
+                    .append(request.getQuery().isEmpty() ? "" : "?" + decodedQuery)
+                    .append("\n\n");
             detail.append(text("detail.request.query"))
                     .append('\n')
-                    .append(request.getQuery())
+                    .append(decodedQuery)
                     .append("\n\n");
             detail.append(text("detail.request.headers")).append('\n');
             for (var header : request.getHeaders()) {
@@ -444,8 +464,22 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
             detail.append('\n')
                     .append(text("detail.request.body"))
                     .append('\n')
-                    .append(request.getBody())
+                    .append(
+                            showFullBody
+                                    ? writer.formatBody(
+                                            "Content-Type: " + request.getContentType(),
+                                            request.getBody())
+                                    : text("detail.nobody"))
                     .append("\n\n");
+        }
+        int selectedRow = callTable.getSelectedRow();
+        if (selectedRow >= 0) {
+            detail.append(VerificationText.text("checks")).append('\n');
+            for (String line :
+                    checkWriter.lines(
+                            callModel.getVerdictAt(callTable.convertRowIndexToModel(selectedRow))))
+                detail.append(line).append('\n');
+            detail.append('\n');
         }
         detail.append(Constant.messages.getString("restextraction.report.headers")).append('\n');
         detail.append(call.getResponseHeaders().strip()).append("\n\n");
@@ -472,6 +506,7 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
         ApiReport report = extractor.getReport(namespace);
         reports.put(namespace, report);
         String template = selectedTemplate();
+        specificationPanel.showEndpoint(namespace, template);
         if (template != null) {
             List<EndpointReport> selected = new ArrayList<>();
             for (EndpointReport endpoint : report.getEndpoints()) {
@@ -581,7 +616,7 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
         int index = methodFilter.getSelectedIndex();
         HttpMethod method = index <= 0 ? null : HttpMethod.values()[index - 1];
         String text = textFilter.getText();
-        if (method == null && text.isBlank()) {
+        if (method == null && text.isBlank() && !onlyInvalidBox.isSelected()) {
             callSorter.setRowFilter(null);
         } else {
             callSorter.setRowFilter(
@@ -589,7 +624,11 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
                         @Override
                         public boolean include(
                                 Entry<? extends CallTableModel, ? extends Integer> entry) {
-                            return callModel.matches(entry.getIdentifier(), method, text);
+                            return callModel.matches(
+                                    entry.getIdentifier(),
+                                    method,
+                                    text,
+                                    onlyInvalidBox.isSelected());
                         }
                     });
         }
@@ -601,6 +640,17 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
     private void updateCallCount() {
         int all = callModel.getRowCount();
         int shown = callTable.getRowCount();
+        if (callModel.hasSpecification()) {
+            int valid = 0, invalid = 0;
+            for (int row = 0; row < shown; row++) {
+                VerdictStatus status =
+                        callModel.getVerdictAt(callTable.convertRowIndexToModel(row)).getStatus();
+                if (status == VerdictStatus.VALID) valid++;
+                if (status == VerdictStatus.INVALID) invalid++;
+            }
+            callCount.setText(VerificationText.text("counts", shown, all, valid, invalid));
+            return;
+        }
         callCount.setText(
                 shown == all
                         ? Constant.messages.getString(PREFIX + "count.all", all)
@@ -774,11 +824,35 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
         callTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         callTable.setFillsViewportHeight(true);
         callTable.setPreferredScrollableViewportSize(new Dimension(TABLE_WIDTH, TABLE_HEIGHT));
-        int[] widths = {70, 70, 60, 220, 320};
+        int[] widths = {70, 70, 60, 220, 320, 65};
         for (int i = 0; i < widths.length; i++) {
             callTable.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
         }
         callTable.getColumnModel().getColumn(STATUS_COLUMN).setCellRenderer(new StatusRenderer());
+        callTable
+                .getColumnModel()
+                .getColumn(5)
+                .setCellRenderer(
+                        new DefaultTableCellRenderer() {
+                            private static final long serialVersionUID = 1L;
+
+                            @Override
+                            public Component getTableCellRendererComponent(
+                                    JTable table,
+                                    Object value,
+                                    boolean selected,
+                                    boolean focused,
+                                    int row,
+                                    int column) {
+                                Component cell =
+                                        super.getTableCellRendererComponent(
+                                                table, value, selected, focused, row, column);
+                                String mark = String.valueOf(value);
+                                if (!selected && !mark.isEmpty())
+                                    cell.setForeground(VerificationText.colour(mark.charAt(0)));
+                                return cell;
+                            }
+                        });
         tabs.setName("tabs");
         detailArea.setName("detail");
         detailArea.setEditable(false);
@@ -806,11 +880,16 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
         countAndBody.add(callCount);
         // Full body only changes the detail view, so it sits in the Calls tab.
         countAndBody.add(fullBodyBox);
+        onlyInvalidBox.setName("onlyInvalid");
+        onlyInvalidBox.addActionListener(e -> onFilter());
+        JPanel filterInputs = new JPanel(new BorderLayout(GAP, 0));
+        filterInputs.add(methodFilter, BorderLayout.WEST);
+        filterInputs.add(textFilter, BorderLayout.CENTER);
+        filterInputs.add(onlyInvalidBox, BorderLayout.EAST);
         JPanel filters = new JPanel(new BorderLayout(GAP, 0));
         filters.setBorder(BorderFactory.createEmptyBorder(GAP, 0, GAP, 0));
-        filters.add(methodFilter, BorderLayout.WEST);
-        filters.add(textFilter, BorderLayout.CENTER);
-        filters.add(countAndBody, BorderLayout.EAST);
+        filters.add(filterInputs, BorderLayout.CENTER);
+        filters.add(countAndBody, BorderLayout.SOUTH);
         JPanel callsTab = new JPanel(new BorderLayout());
         callsTab.add(filters, BorderLayout.NORTH);
         callsTab.add(calls, BorderLayout.CENTER);
@@ -831,6 +910,7 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
         JPanel side = new JPanel(new BorderLayout());
         side.add(top, BorderLayout.NORTH);
         tabs.addTab(text("tab.documentation"), new JScrollPane(reportPane));
+        tabs.addTab(VerificationText.text("specification"), specificationPanel);
         side.add(tabs, BorderLayout.CENTER);
         return side;
     }
@@ -893,6 +973,48 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
         private static final long serialVersionUID = 1L;
 
         @Override
+        protected void paintComponent(Graphics graphics) {
+            super.paintComponent(graphics);
+            String label = getText();
+            int valid = label == null ? -1 : label.lastIndexOf("✓ ");
+            int invalid = label == null ? -1 : label.lastIndexOf("✗ ");
+            if (valid < 0 || invalid < valid) return;
+            var metrics = graphics.getFontMetrics(getFont());
+            Rectangle icon = new Rectangle(), text = new Rectangle();
+            Insets insets = getInsets();
+            Rectangle view =
+                    new Rectangle(
+                            insets.left,
+                            insets.top,
+                            getWidth() - insets.left - insets.right,
+                            getHeight() - insets.top - insets.bottom);
+            SwingUtilities.layoutCompoundLabel(
+                    this,
+                    metrics,
+                    label,
+                    getIcon(),
+                    getVerticalAlignment(),
+                    getHorizontalAlignment(),
+                    getVerticalTextPosition(),
+                    getHorizontalTextPosition(),
+                    view,
+                    icon,
+                    text,
+                    getIconTextGap());
+            int baseline = text.y + metrics.getAscent();
+            graphics.setColor(VerificationText.colour('✓'));
+            graphics.drawString(
+                    label.substring(valid, invalid),
+                    text.x + metrics.stringWidth(label.substring(0, valid)),
+                    baseline);
+            graphics.setColor(VerificationText.colour('✗'));
+            graphics.drawString(
+                    label.substring(invalid),
+                    text.x + metrics.stringWidth(label.substring(0, invalid)),
+                    baseline);
+        }
+
+        @Override
         public Component getTreeCellRendererComponent(
                 JTree tree,
                 Object value,
@@ -920,8 +1042,13 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
                 calls += endpoint.getCalls().size();
             }
             String state = text(namespace.isExtracting() ? "tree.running" : "tree.stopped");
-            return Constant.messages.getString(
-                    PREFIX + "tree.namespace", namespace.getBaseUrl(), state, callsText(calls));
+            String label =
+                    Constant.messages.getString(
+                            PREFIX + "tree.namespace",
+                            namespace.getBaseUrl(),
+                            state,
+                            callsText(calls));
+            return verificationLabel(label, reportOf(namespace).getEndpoints());
         }
         if (node.getUserObject() instanceof String) {
             String template = (String) node.getUserObject();
@@ -933,10 +1060,25 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
                     calls = endpoint.getCalls().size();
                 }
             }
-            return Constant.messages.getString(
-                    PREFIX + "tree.endpoint", template, callsText(calls));
+            String label =
+                    Constant.messages.getString(
+                            PREFIX + "tree.endpoint", template, callsText(calls));
+            return verificationLabel(
+                    label,
+                    reportOf(namespace).getEndpoints().stream()
+                            .filter(e -> e.getTemplate().equals(template))
+                            .toList());
         }
         return "";
+    }
+
+    private String verificationLabel(String label, List<EndpointReport> endpoints) {
+        if (endpoints.stream().allMatch(e -> e.getSpec().isEmpty())) return label;
+        int valid = endpoints.stream().mapToInt(EndpointReport::getValidCount).sum();
+        int invalid = endpoints.stream().mapToInt(EndpointReport::getInvalidCount).sum();
+        // ZAP disables HTML rendering for labels. Paint semantic count colours in the
+        // tree renderer rather than displaying markup literally or enabling unsafe HTML.
+        return label + "  ✓ " + valid + "  ✗ " + invalid;
     }
 
     private ApiReport reportOf(ApiNamespace namespace) {

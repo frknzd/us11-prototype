@@ -65,7 +65,7 @@ class CallTableModelUnitTest extends TestUtils {
         }
 
         // Then
-        assertThat(columns, contains("Time", "Method", "Status", "Endpoint", "Arguments"));
+        assertThat(columns, contains("Time", "Method", "Status", "Endpoint", "Arguments", "Check"));
     }
 
     @Test

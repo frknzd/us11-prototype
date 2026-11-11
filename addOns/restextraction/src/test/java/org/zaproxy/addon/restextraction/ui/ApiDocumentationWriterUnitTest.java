@@ -90,7 +90,7 @@ class ApiDocumentationWriterUnitTest extends TestUtils {
     }
 
     @Test
-    void shouldShowBaseUrlOnceAndOneSectionPerTemplate() {
+    void shouldShowBaseHeadingAndCapturedRequestUrlsPerTemplate() {
         // Given
         ApiReport report =
                 reportOf(
@@ -101,7 +101,9 @@ class ApiDocumentationWriterUnitTest extends TestUtils {
         String html = writer.write(report);
 
         // Then
-        assertThat(countOf(BASE_URL, html), is(1));
+        // US11 shows each captured request URL as well as the single namespace heading.
+        assertThat(countOf("<h2>" + BASE_URL + "</h2>", html), is(1));
+        assertThat(countOf(BASE_URL, html), is(3));
         assertThat(countOf("<h3>", html), is(2));
         assertThat(html, containsString("<h3>/users/[USER_ID]</h3>"));
     }
@@ -293,7 +295,7 @@ class ApiDocumentationWriterUnitTest extends TestUtils {
         String html = writer.write(report);
 
         // Then
-        String headers = html.substring(html.indexOf("<pre>") + 5, html.indexOf("</pre>"));
+        String headers = html.substring(html.lastIndexOf("<pre>") + 5, html.lastIndexOf("</pre>"));
         for (String line : headers.split("\n")) {
             assertThat(line.length(), is(lessThanOrEqualTo(100)));
         }

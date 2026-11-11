@@ -109,6 +109,9 @@ public final class EndpointSpec {
         Objects.requireNonNull(replacement, "replacement");
         if (items.stream().noneMatch(i -> i.sameKey(old)))
             throw new SpecValidationException("missingItem");
+        if (old.getKind() == SpecItemKind.METHOD
+                && replacement.getKind() == SpecItemKind.METHOD
+                && old.getMethod() == replacement.getMethod()) return this;
         List<SpecItem> next =
                 new ArrayList<>(
                         items.stream()
