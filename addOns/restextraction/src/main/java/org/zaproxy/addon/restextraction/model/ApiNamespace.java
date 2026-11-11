@@ -104,6 +104,28 @@ public class ApiNamespace {
                                 .equals(withoutTrailingSlash(template)));
     }
 
+    public void addSpecItem(String template, SpecItem item) {
+        endpoint(template).addSpecItem(item);
+    }
+
+    public void removeSpecItem(String template, SpecItem item) {
+        endpoint(template).removeSpecItem(item);
+    }
+
+    public void replaceSpecItem(String template, SpecItem old, SpecItem replacement) {
+        endpoint(template).replaceSpecItem(old, replacement);
+    }
+
+    private Endpoint endpoint(String template) {
+        return endpoints.stream()
+                .filter(
+                        e ->
+                                withoutTrailingSlash(e.getTemplate())
+                                        .equals(withoutTrailingSlash(template)))
+                .findFirst()
+                .orElseThrow(() -> new SpecValidationException("endpoint"));
+    }
+
     /** Starts extracting. Starting twice does nothing. */
     public void start() {
         extracting = true;

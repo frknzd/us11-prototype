@@ -52,6 +52,18 @@ public class EndpointPattern {
         this.segments = parse(template);
     }
 
+    /** Variable names in template order, shared by validation and the specification form. */
+    public List<String> getVariableNames() {
+        UrlPath path = new UrlPath(template);
+        List<String> names = new ArrayList<>();
+        for (int i = 0; i < path.size(); i++) {
+            String part = path.part(i);
+            if (part.startsWith("[") && part.endsWith("]"))
+                names.add(part.substring(1, part.length() - 1));
+        }
+        return List.copyOf(names);
+    }
+
     public String getTemplate() {
         return template;
     }

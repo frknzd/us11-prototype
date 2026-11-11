@@ -443,6 +443,8 @@ ZAP run from source (`./gradlew :zap:run`) with the add-on built from the US11 b
 - `JsonReader` uses iterative frames instead of recursive descent: 50,000 levels cannot overflow the Java stack; validation continues beyond the extraction-depth limit without retaining unbounded path strings.
 - `ParameterTypesUnitTest` implements PT-S/I/D/B groups; `VerificationUnitTest` implements FN/PS/OS, ES except endpoint-level ES9, SI and VD. Tests intentionally retain exact decimal comparisons and original JSON number spellings.
 - Two implementation helpers refine the class design without changing rules: package-private `NumericGrammar` (shared linear numeric scanner) and `SpecValidationException` (structured localization key/arguments). Field names use tokenized steps, never regex matching.
+- `ReportVerificationUnitTest` implements EI1–EI6, endpoint ES9, NS6, RX1/RX2/RX4 and CC1/CC2. Parsing-once is checked by retaining the same immutable parsed-request identity across reports; concurrency checks each check's exact parameter identity against the report's captured specification instead of adding a production-only spec ID.
+- Atomic UI edits require `EndpointSpec.replacing` and `replaceSpecItem` through Endpoint/Namespace/Extractor. This additive API validates the final replacement and swaps once; remove-then-add would expose an intermediate spec and incorrectly refuse some valid content-type edits. Refusals preserve the old spec/cache. UI method-item edits must confirm removal of dependent items.
 - Actual outcomes and limitations are in `docs/implementation-status.md`. Unimplemented groups remain planned, not passed.
 
 ## 5. Counts (for the sign-off card)

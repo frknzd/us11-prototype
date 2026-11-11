@@ -37,6 +37,8 @@ public final class EndpointReport {
     private final Map<HttpMethod, Integer> callCounts;
     private final List<RecordedCall> calls;
     private final Map<String, Map<String, Integer>> valuesSeen;
+    private final EndpointSpec spec;
+    private final Map<RecordedCall, Verdict> verdicts;
 
     /**
      * @param template the pattern as the user typed it, like {@code /posts/[POST_ID]}
@@ -47,10 +49,49 @@ public final class EndpointReport {
      */
     public EndpointReport(
             String template, Map<HttpMethod, Integer> callCounts, List<RecordedCall> calls) {
+        this(template, callCounts, calls, EndpointSpec.empty(), Map.of());
+    }
+
+    public EndpointReport(
+            String template,
+            Map<HttpMethod, Integer> callCounts,
+            List<RecordedCall> calls,
+            EndpointSpec spec,
+            Map<RecordedCall, Verdict> verdicts) {
+        this.spec = Objects.requireNonNull(spec, "spec");
+        this.verdicts = Map.copyOf(verdicts);
         this.template = Objects.requireNonNull(template, "template");
         this.callCounts = copyOfCounts(Objects.requireNonNull(callCounts, "callCounts"));
         this.calls = copyOfCalls(Objects.requireNonNull(calls, "calls"));
         this.valuesSeen = valuesSeenIn(this.calls);
+    }
+
+    public EndpointSpec getSpec() {
+        return spec;
+    }
+
+    public Verdict getVerdict(RecordedCall call) {
+        return verdicts.getOrDefault(call, Verdict.notVerified(false));
+    }
+
+    public int getValidCount() {
+        return count(VerdictStatus.VALID);
+    }
+
+    public int getInvalidCount() {
+        return count(VerdictStatus.INVALID);
+    }
+
+    private int count(VerdictStatus status) {
+        return (int) calls.stream().filter(c -> getVerdict(c).getStatus() == status).count();
+    }
+
+    public Map<ViolationKind, Integer> getViolationCounts() {
+        Map<ViolationKind, Integer> counts = new EnumMap<>(ViolationKind.class);
+        for (RecordedCall call : calls)
+            for (Violation violation : getVerdict(call).getViolations())
+                counts.merge(violation.getKind(), 1, Integer::sum);
+        return Collections.unmodifiableMap(counts);
     }
 
     public String getTemplate() {

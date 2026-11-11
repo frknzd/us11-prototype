@@ -93,6 +93,23 @@ public class RestExtractor {
         namespace.stop();
     }
 
+    public void addSpecItem(ApiNamespace namespace, String template, SpecItem item) {
+        namespace.addSpecItem(template, item);
+        notifyObservers(namespace);
+    }
+
+    public void removeSpecItem(ApiNamespace namespace, String template, SpecItem item) {
+        namespace.removeSpecItem(template, item);
+        notifyObservers(namespace);
+    }
+
+    /** One edit and one notification; a report can never see an intermediate removal. */
+    public void replaceSpecItem(
+            ApiNamespace namespace, String template, SpecItem old, SpecItem replacement) {
+        namespace.replaceSpecItem(template, old, replacement);
+        notifyObservers(namespace);
+    }
+
     /** Gives the call to every namespace and tells the observers which ones recorded it. */
     public void record(ApiCall call) {
         for (ApiNamespace namespace : namespaces) {

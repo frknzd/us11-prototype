@@ -21,8 +21,10 @@ package org.zaproxy.addon.restextraction.model;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * One endpoint of an API, like {@code /posts/[POST_ID]/comments}, and the calls that were made to
@@ -33,6 +35,40 @@ public class Endpoint {
     private final EndpointPattern pattern;
     // Guarded by itself: the proxy threads add calls while the Swing thread asks for a report.
     private final List<RecordedCall> calls = new ArrayList<>();
+    private volatile SpecState state = new SpecState(EndpointSpec.empty());
+
+    private static final class SpecState {
+        private final EndpointSpec spec;
+        private final Map<RecordedCall, Verdict> verdicts = new ConcurrentHashMap<>();
+
+        private SpecState(EndpointSpec spec) {
+            this.spec = spec;
+        }
+    }
+
+    public EndpointSpec getSpec() {
+        return state.spec;
+    }
+
+    public synchronized void addSpecItem(SpecItem item) {
+        validatePathItem(item);
+        state = new SpecState(state.spec.with(item));
+    }
+
+    public synchronized void removeSpecItem(SpecItem item) {
+        state = new SpecState(state.spec.without(item));
+    }
+
+    public synchronized void replaceSpecItem(SpecItem old, SpecItem replacement) {
+        validatePathItem(replacement);
+        state = new SpecState(state.spec.replacing(old, replacement));
+    }
+
+    private void validatePathItem(SpecItem item) {
+        if (item.getKind() == SpecItemKind.PATH_VARIABLE
+                && !pattern.getVariableNames().contains(item.getParameter().getName()))
+            throw new SpecValidationException("pathVariable");
+    }
 
     /**
      * @param template the pattern relative to the namespace, like {@code /posts/[POST_ID]}
@@ -64,14 +100,16 @@ public class Endpoint {
     }
 
     /** Forgets the recorded calls. Reports that were made before keep theirs. */
-    public void clear() {
+    public synchronized void clear() {
         synchronized (calls) {
             calls.clear();
         }
+        state = new SpecState(state.spec);
     }
 
     /** Gives the calls recorded so far and their count per method. Later calls are not in it. */
     public EndpointReport createReport() {
+        SpecState reportState = state;
         List<RecordedCall> snapshot;
         synchronized (calls) {
             snapshot = List.copyOf(calls);
@@ -84,7 +122,13 @@ public class Endpoint {
                 callCounts.put(method, count);
             }
         }
-        return new EndpointReport(pattern.getTemplate(), callCounts, snapshot);
+        Map<RecordedCall, Verdict> verdicts = new LinkedHashMap<>();
+        for (RecordedCall call : snapshot) {
+            verdicts.put(
+                    call, reportState.verdicts.computeIfAbsent(call, reportState.spec::verify));
+        }
+        return new EndpointReport(
+                pattern.getTemplate(), callCounts, snapshot, reportState.spec, verdicts);
     }
 
     private static int countCalls(List<RecordedCall> calls, HttpMethod method) {

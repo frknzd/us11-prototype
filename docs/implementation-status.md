@@ -32,6 +32,15 @@
 - **586 tests passing**, 0 failures/errors/skips. Current aggregate model coverage: 1083/1114 lines (97.2%), 762/819 branches (93.0%). Stricter per-parser/type gates are not yet all met; final acceptance must report and address those gaps rather than treating aggregate coverage as sufficient.
 - Specification editing has not yet been connected to endpoints or the UI; ES9 path-name validation belongs to the next integration checkpoint.
 
+## Checkpoint 4 — report integration and concurrency
+
+- Endpoints now atomically replace immutable spec/cache state. Recording parses once and never takes the edit monitor; reports retain one state reference for every verdict.
+- Report snapshots expose spec, verdicts, valid/invalid counts and violation-kind counts. Existing reports retain old results; unchanged specs reuse cached verdict objects; changes invalidate them. Clearing calls retains specs; removing/re-adding endpoints starts empty.
+- Namespace/facade methods validate path variable names and notify the existing coalesced UI observer after accepted changes.
+- Added atomic `replaceSpecItem` and `EndpointSpec.replacing`: validates the final edited spec without exposing/removing an intermediate spec. This is necessary for correct form edits, including replacing the sole parsable content type while other content types exist.
+- **593 tests passing**, 0 failures/errors/skips. Concurrency test records 8,000 calls on eight threads while replacing the spec 200 times and verifies exact report/check parameter identity. Two additional checks show recording does not acquire the edit monitor and editing finishes while recording is deliberately blocked.
+- All changes remain in the local prototype; no remote or uploads.
+
 ## Pending
 
-Report integration, complete primary UI, unmatched paths, deterministic demo and full US11 acceptance are not yet implemented. Manual GUI acceptance and final per-class coverage gates remain pending.
+Complete primary UI, unmatched paths, deterministic demo and full US11 acceptance are not yet implemented. Manual GUI acceptance and final per-class coverage gates remain pending.

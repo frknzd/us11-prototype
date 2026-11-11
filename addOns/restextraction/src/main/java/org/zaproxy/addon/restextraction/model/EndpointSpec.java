@@ -103,6 +103,34 @@ public final class EndpointSpec {
                         .toList());
     }
 
+    /** Validates the final replacement, never an intermediate removal. */
+    public EndpointSpec replacing(SpecItem old, SpecItem replacement) {
+        Objects.requireNonNull(old, "old");
+        Objects.requireNonNull(replacement, "replacement");
+        if (items.stream().noneMatch(i -> i.sameKey(old)))
+            throw new SpecValidationException("missingItem");
+        List<SpecItem> next =
+                new ArrayList<>(
+                        items.stream()
+                                .filter(
+                                        i ->
+                                                old.getKind() == SpecItemKind.METHOD
+                                                        ? i.getMethod() != old.getMethod()
+                                                        : !i.sameKey(old))
+                                .toList());
+        if (next.stream().anyMatch(i -> i.sameKey(replacement)))
+            throw new SpecValidationException("duplicate");
+        if (replacement.getKind() != SpecItemKind.METHOD
+                && next.stream()
+                        .noneMatch(
+                                i ->
+                                        i.getMethod() == replacement.getMethod()
+                                                && i.getKind() == SpecItemKind.METHOD))
+            next.add(SpecItem.method(replacement.getMethod()));
+        next.add(replacement);
+        return new EndpointSpec(next);
+    }
+
     public Verdict verify(RecordedCall call) {
         if (isEmpty()) return Verdict.notVerified(false);
         if (isPreflight(call)) return Verdict.notVerified(true);
