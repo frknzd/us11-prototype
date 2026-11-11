@@ -290,7 +290,7 @@ Operation `POST` unless stated; the call's arguments come from the listed reques
 | PD5 | `rename(1, "POST_ID")` / `rename(1, "a b")` | template `/api/[POST_ID]/comments` / refused | SPEC-U05, SPEC-U10 |
 | PD6 | path `/a//b` / `/` | `problem()` "empty part" / "no parts"; no chips toggleable | SPEC-U07 |
 | PD7 | parts `.`, `..`, `a[b`, `50%`, `a b` | `canBeLiteral` false; `toggle` back to literal refused | SPEC-U08 |
-| PD8 | literal `my doc` (decoded), `ü`, `a+b`, `x:y@z` | template parts `my%20doc`, `%C3%BC`, `a+b`, `x:y@z` | SPEC-U09 |
+| PD8 | decoded `my doc`, and literals `ü`, `a+b`, `x:y@z` | `my doc` starts as variable `[my_doc]` under SPEC-U08; allowed literals encode as `%C3%BC`, `a+b`, `x:y@z` | SPEC-U08, SPEC-U09 |
 | PD9 | toggle a literal to variable and back | template as before | SPEC-U05 |
 | PD10 | `problem()` for a valid draft / for two variables renamed to the same name | empty / the US10 refusal message | SPEC-U10 |
 | UP1 | `new UrlPath("/a/b").equals(new UrlPath("/a/b/"))`, `hashCode` equal | true, equal | SPEC-U02 |
@@ -449,6 +449,9 @@ ZAP run from source (`./gradlew :zap:run`) with the add-on built from the US11 b
 - The opt-in `scripts/ui-smoke.sh` agent tests the real ZAP GUI through Swing controls and a temporary loopback HTTP fixture: neutral capture, adding/editing an Integer item, old-call rejudging, invalid filtering and diagnostics. It records screenshots for light/dark and compact layouts under ignored `.local/ui-smoke/`. It is not shipped in the extension and never automatically seeds a normal startup.
 - US11 intentionally changes three legacy documentation expectations: captured request URLs are now included, the namespace heading is still unique, and response-header wrapping is asserted against the response block rather than assuming it is the first block. Response bodies remain excluded from documentation. Full body now applies to both request and response details.
 - ZAP disables HTML in tree labels. Tree counts therefore use native renderer painting, not HTML strings; diagnostics/documentation use escaped HTML only in the HTML view. This keeps traffic text inert and counts readable.
+- `UnmatchedPathsUnitTest` covers UM/PD/UP, namespace unmatched-path lifecycle and facade snapshots. UI support tests cover refresh/selection/clear and documentation exclusion; the real GUI smoke additionally exercises the modal chip builder and normal endpoint registration.
+- Resolved a contradiction in the prototype acceptance copy: SPEC-U08 forbids whitespace literals, whereas old PD8 expected `my doc` to become a literal. Unsafe parts now start as variables, and PD8 expects `[my_doc]`; safe Unicode literals still percent-encode. SPEC-U05 is qualified accordingly. This refinement is explicit and leaves the workspace/team design originals unchanged for review.
+- Observer notifications now also refresh unmatched data and newly registered patterns, without treating unmatched traffic as recorded calls. The legacy no-notification test was replaced with explicit notification plus zero endpoint-call assertions; namespace context menus now include Unmatched paths.
 - Actual outcomes and limitations are in `docs/implementation-status.md`. Unimplemented groups remain planned, not passed.
 
 ## 5. Counts (for the sign-off card)

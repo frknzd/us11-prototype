@@ -242,18 +242,22 @@ class RestExtractorUnitTest {
     }
 
     @Test
-    void shouldNotTellObserversWhenCallMatchesNothing() {
+    void shouldRefreshUnmatchedPanelWithoutCountingAnEndpointCall() {
         // Given
         RestExtractor extractor = new RestExtractor();
         // When
-        started(extractor, BASE_URL, TEMPLATE);
+        ApiNamespace namespace = started(extractor, BASE_URL, TEMPLATE);
         ExtractionObserver observer = mock(ExtractionObserver.class);
         extractor.addObserver(observer);
 
         extractor.record(call(BASE_URL + "/users/1"));
 
-        // Then
-        verifyNoInteractions(observer);
+        // Then: US11 needs a redraw of the separate unmatched-path panel, not a tree count.
+        verify(observer).callRecorded(namespace);
+        assertThat(
+                extractor.getReport(namespace).getEndpoints().get(0).getCalls().isEmpty(),
+                is(true));
+        assertThat(extractor.getUnmatchedPaths(namespace).get(new UrlPath("/users/1")), is(1));
     }
 
     @Test

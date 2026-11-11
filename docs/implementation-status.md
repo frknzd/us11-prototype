@@ -51,6 +51,16 @@
 - Visual testing found and fixed two issues: ZAP disables HTML labels (tree now paints native coloured counts), and the initial splitter starved the editor (explicit editor/table sizing now keeps the complete numeric form usable in the compact window).
 - The smoke agent is test tooling only, excluded from the add-on; normal startup never seeds namespaces or specs. Run with `scripts/ui-smoke.sh` only after stopping the prototype instance. Existing ZAP on port 8080 remains untouched.
 
+## Checkpoint 6 — unmatched paths and chip builder
+
+- Added bounded, thread-safe decoded-path counts (1000 distinct paths plus overflow), snapshot access, clear lifecycle and value equality for UrlPath. Unmatched calls do not enter reports, main counts or documentation.
+- Added the namespace button/context item, independently refreshed/sortable Path/Calls panel and modal literal/variable chip builder. Builder registration uses the normal facade; newly created patterns appear in the main tree with an empty spec. Clearing unmatched counts leaves recorded calls/specs intact.
+- **605 tests passing**, 0 failures/errors/skips. Tests cover bounded concurrent counts, decoded identity, builder naming/encoding/validation, namespace lifecycle, UI refresh/selection/clear and documentation exclusion.
+- Extended the real GUI smoke: generated an unmatched request, opened the actual dialog, toggled/renamed a chip, verified `/items/[ITEM_ID]`, registered it, observed it in the tree, captured a neutral call and cleared unmatched counts. Smoke passed; inspected `.local/ui-smoke/pattern-builder-dark.png`.
+- Explicit prototype design refinement: U08 forbids whitespace literals, but the old PD8 example expected one. U08 now takes precedence: unsafe parts start as variables; safe Unicode literals are encoded. The prototype spec/test-plan copy records this; workspace/team design originals are unchanged for review.
+- Observer refresh signals now include unmatched data/new patterns without changing recorded-call return semantics or counts. Namespace Clear also clears unmatched counts when there are zero matched calls. Associated dialogs are disposed with their namespace/panel.
+- Shared test-plan DOCX updated to history 0.1.20 with the refinement and UI acceptance checks after a concurrent-edit check and backup.
+
 ## Pending
 
-Unmatched paths, persistent demo scripts/documentation and full per-case acceptance/coverage are not yet finished. Remaining manual cases, including help availability and human review of interaction ergonomics, must be reported separately from the automated GUI smoke.
+Persistent demo scripts/documentation and full per-case acceptance/coverage are not yet finished. Remaining manual cases, including help availability and human review of interaction ergonomics, must be reported separately from the automated GUI smoke.

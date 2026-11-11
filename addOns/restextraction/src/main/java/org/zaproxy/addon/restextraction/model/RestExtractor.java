@@ -20,6 +20,7 @@
 package org.zaproxy.addon.restextraction.model;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,7 +57,9 @@ public class RestExtractor {
      * @throws IllegalArgumentException if the template is not valid or was added before
      */
     public Endpoint addEndpoint(ApiNamespace namespace, String template) {
-        return namespace.addEndpoint(template);
+        Endpoint endpoint = namespace.addEndpoint(template);
+        notifyObservers(namespace);
+        return endpoint;
     }
 
     /**
@@ -66,6 +69,7 @@ public class RestExtractor {
     public synchronized void removeNamespace(ApiNamespace namespace) {
         namespaces.remove(namespace);
         namespace.stop();
+        namespace.getUnmatchedPaths().clear();
     }
 
     /** Removes the endpoint with this template from the namespace, with its recorded calls. */
@@ -110,12 +114,26 @@ public class RestExtractor {
         notifyObservers(namespace);
     }
 
+    public Map<UrlPath, Integer> getUnmatchedPaths(ApiNamespace namespace) {
+        return namespace.getUnmatchedPaths().counts();
+    }
+
+    public int getUnmatchedOverflow(ApiNamespace namespace) {
+        return namespace.getUnmatchedPaths().getOverflow();
+    }
+
+    public void clearUnmatchedPaths(ApiNamespace namespace) {
+        namespace.getUnmatchedPaths().clear();
+        notifyObservers(namespace);
+    }
+
     /** Gives the call to every namespace and tells the observers which ones recorded it. */
     public void record(ApiCall call) {
         for (ApiNamespace namespace : namespaces) {
-            if (namespace.record(call)) {
+            long unmatchedBefore = namespace.getUnmatchedPaths().version();
+            boolean recorded = namespace.record(call);
+            if (recorded || unmatchedBefore != namespace.getUnmatchedPaths().version())
                 notifyObservers(namespace);
-            }
         }
     }
 

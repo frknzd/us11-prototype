@@ -34,6 +34,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -46,6 +48,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JDialog;
 import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
@@ -143,6 +146,8 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
     private final JButton startStopButton = new JButton(text("start"));
     private final JButton clearButton = new JButton(text("clear"));
     private final JButton removeButton = new JButton(text("remove"));
+    private final JButton unmatchedButton = new JButton(VerificationText.text("unmatchedPaths"));
+    private final transient Map<ApiNamespace, JDialog> unmatchedDialogs = new HashMap<>();
     private final JPopupMenu treeMenu = new JPopupMenu();
     private final JButton helpButton = new JButton();
     private final JTextArea messageArea = new JTextArea();
@@ -181,6 +186,8 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
         addEndpointButton.addActionListener(e -> onAddEndpoint());
         startStopButton.addActionListener(e -> onStartStop());
         clearButton.addActionListener(e -> onClear());
+        unmatchedButton.setName("unmatchedPathsButton");
+        unmatchedButton.addActionListener(e -> onShowUnmatched());
         // A refused input stays in its field; once the user changes it, the old message is wrong.
         DocumentListener clearMessage = onChange(this::clearMessage);
         baseUrlField.getDocument().addDocumentListener(clearMessage);
@@ -219,6 +226,8 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
     @Override
     public void removeNotify() {
         redrawTimer.stop();
+        for (JDialog dialog : List.copyOf(unmatchedDialogs.values())) dialog.dispose();
+        unmatchedDialogs.clear();
         super.removeNotify();
     }
 
@@ -323,6 +332,8 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
             return;
         }
         extractor.removeNamespace(namespace);
+        JDialog unmatchedDialog = unmatchedDialogs.remove(namespace);
+        if (unmatchedDialog != null) unmatchedDialog.dispose();
         reports.remove(namespace);
         treeModel.removeNodeFromParent(namespaceNode);
         namespaceTree.clearSelection();
@@ -341,6 +352,11 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
         String template = selectedTemplate();
         int calls = callsOf(namespace, template);
         if (calls == 0) {
+            if (template == null) {
+                extractor.clear(namespace);
+                refreshTree();
+                showReport(namespace);
+            }
             return;
         }
         String cleared = template != null ? template : namespace.getBaseUrl();
@@ -395,6 +411,36 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
         }
         treeMenu.add(menuItem(text("clear"), this::onClear));
         treeMenu.add(menuItem(text("remove"), this::onRemove));
+        if (selectedTemplate() == null)
+            treeMenu.add(menuItem(VerificationText.text("unmatchedPaths"), this::onShowUnmatched));
+    }
+
+    private void onShowUnmatched() {
+        ApiNamespace namespace = selectedNamespace();
+        if (namespace == null) return;
+        JDialog existing = unmatchedDialogs.get(namespace);
+        if (existing != null) {
+            existing.toFront();
+            return;
+        }
+        JDialog dialog =
+                new JDialog(
+                        SwingUtilities.getWindowAncestor(this),
+                        VerificationText.text("unmatchedPaths"));
+        dialog.setName("unmatchedDialog");
+        dialog.setContentPane(new UnmatchedPathsPanel(extractor, namespace));
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        dialog.setSize(700, 450);
+        dialog.setLocationRelativeTo(this);
+        dialog.addWindowListener(
+                new WindowAdapter() {
+                    @Override
+                    public void windowClosed(WindowEvent event) {
+                        unmatchedDialogs.remove(namespace);
+                    }
+                });
+        unmatchedDialogs.put(namespace, dialog);
+        dialog.setVisible(true);
     }
 
     private static JMenuItem menuItem(String label, Runnable action) {
@@ -558,7 +604,28 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
         for (int i = 0; i < root.getChildCount(); i++) {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) root.getChildAt(i);
             ApiNamespace namespace = (ApiNamespace) node.getUserObject();
-            reports.put(namespace, extractor.getReport(namespace));
+            ApiReport report = extractor.getReport(namespace);
+            reports.put(namespace, report);
+            for (EndpointReport endpoint : report.getEndpoints()) {
+                boolean exists = false;
+                for (int j = 0; j < node.getChildCount(); j++)
+                    if (((DefaultMutableTreeNode) node.getChildAt(j))
+                            .getUserObject()
+                            .equals(endpoint.getTemplate())) exists = true;
+                if (!exists)
+                    treeModel.insertNodeInto(
+                            new DefaultMutableTreeNode(endpoint.getTemplate(), false),
+                            node,
+                            node.getChildCount());
+            }
+            for (int j = node.getChildCount() - 1; j >= 0; j--) {
+                DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(j);
+                if (report.getEndpoints().stream()
+                        .noneMatch(e -> e.getTemplate().equals(child.getUserObject())))
+                    treeModel.removeNodeFromParent(child);
+            }
+            JDialog dialog = unmatchedDialogs.get(namespace);
+            if (dialog != null) ((UnmatchedPathsPanel) dialog.getContentPane()).refresh();
             treeModel.nodeChanged(node);
             for (int j = 0; j < node.getChildCount(); j++) {
                 treeModel.nodeChanged(node.getChildAt(j));
@@ -588,6 +655,7 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
         startStopButton.setEnabled(selected != null);
         clearButton.setEnabled(selected != null);
         removeButton.setEnabled(selected != null);
+        unmatchedButton.setEnabled(selected != null && selectedTemplate() == null);
         boolean extracting = selected != null && selected.isExtracting();
         startStopButton.setText(text(extracting ? "stop" : "start"));
     }
@@ -772,9 +840,10 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
         addRow(side, 1, baseUrlField, addNamespaceButton, 0);
         addRow(side, 2, new JScrollPane(namespaceTree), null, 1);
         addRow(side, 3, leftAligned(startStopButton, clearButton, removeButton), null, 0);
-        addRow(side, 4, new JLabel(text("pattern")), null, 0);
-        addRow(side, 5, patternField, addEndpointButton, 0);
-        addRow(side, 6, messageArea, null, 0);
+        addRow(side, 4, leftAligned(unmatchedButton), null, 0);
+        addRow(side, 5, new JLabel(text("pattern")), null, 0);
+        addRow(side, 6, patternField, addEndpointButton, 0);
+        addRow(side, 7, messageArea, null, 0);
         return side;
     }
 

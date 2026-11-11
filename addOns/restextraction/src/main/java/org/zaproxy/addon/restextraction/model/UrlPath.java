@@ -83,6 +83,21 @@ public final class UrlPath {
         return parts.get(index);
     }
 
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof UrlPath path && parts.equals(path.parts);
+    }
+
+    @Override
+    public int hashCode() {
+        return parts.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "/" + String.join("/", parts);
+    }
+
     private static List<String> decodedParts(String path) {
         List<String> parts = new ArrayList<>();
         // Split first and decode after, so an encoded / (%2F) stays inside one part.

@@ -1097,7 +1097,9 @@ class RestExtractionPanelUnitTest extends TestUtils {
                     List<String> endpointItems = menuItems();
 
                     // Then
-                    assertThat(namespaceItems, contains("Start", "Clear calls", "Remove"));
+                    assertThat(
+                            namespaceItems,
+                            contains("Start", "Clear calls", "Remove", "Unmatched paths"));
                     assertThat(endpointItems, contains("Clear calls", "Remove"));
                 });
     }

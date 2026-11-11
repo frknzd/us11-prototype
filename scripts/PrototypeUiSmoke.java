@@ -5,6 +5,7 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.Frame;
 import java.awt.Robot;
+import java.awt.Window;
 import java.awt.image.BufferedImage;
 import java.lang.instrument.Instrumentation;
 import java.net.InetSocketAddress;
@@ -76,13 +77,35 @@ public final class PrototypeUiSmoke {
                 snapshot("documentation-dark");
                 edt(()->{tabs().setSelectedIndex(2);select("specKind","QUERY_PARAMETER");select("specTYPE","Integer");field("specName").setText("page");for(Frame frame:Frame.getFrames())if(frame.isVisible())frame.setSize(1150,800);return null;});
                 snapshot("specification-compact-dark");
-                Files.writeString(output.resolve("result.txt"),"PASS: real ZAP GUI, neutral calls, specification save/edit, report-time rejudging, valid/invalid checks, invalid-only filtering, diagnostics, documentation, light/dark and compact layout.\n");
+                unmatchedWorkflow(client,base);
+                Files.writeString(output.resolve("result.txt"),"PASS: real ZAP GUI, neutral calls, specification save/edit, report-time rejudging, checks/filtering/diagnostics/documentation, light/dark/compact layouts, unmatched paths and chip builder registration.\n");
                 System.out.println("US11 UI smoke: PASS (loopback-only fixture, results under ignored .local)");
             } catch(Throwable error) {
                 try{Files.writeString(output.resolve("result.txt"),"FAIL: "+error+"\n");}catch(Exception ignored){}
                 error.printStackTrace();
             } finally {if(fixture!=null)fixture.stop(0);}
         },"US11-UI-smoke");worker.setDaemon(true);worker.start();
+    }
+    private static void unmatchedWorkflow(HttpClient client,String base)throws Exception {
+        send(client,base+"/items/42");
+        edt(()->{JTree tree=(JTree)find(panel,"namespaces");var root=(DefaultMutableTreeNode)tree.getModel().getRoot();var ns=(DefaultMutableTreeNode)root.getChildAt(root.getChildCount()-1);tree.setSelectionPath(new TreePath(ns.getPath()));click("unmatchedPathsButton");return null;});
+        Container unmatched=window("unmatchedDialog");
+        for(int i=0;i<50 && edt(()->((JTable)find(unmatched,"unmatchedTable")).getRowCount())!=1;i++)Thread.sleep(100);
+        edt(()->{JTable table=(JTable)find(unmatched,"unmatchedTable");require(table.getRowCount()==1,"Unmatched path was not counted");table.setRowSelectionInterval(0,0);SwingUtilities.invokeLater(()->((JButton)find(unmatched,"addUnmatchedPattern")).doClick());return null;});
+        Container builder=window("patternBuilder");
+        edt(()->{((javax.swing.JToggleButton)find(builder,"chip1")).doClick();((JTextField)find(builder,"chipName1")).setText("ITEM_ID");require(((JTextField)find(builder,"patternPreview")).getText().equals("/items/[ITEM_ID]"),"Pattern preview mismatch");return null;});
+        snapshot("pattern-builder-dark");
+        edt(()->{((JButton)find(builder,"confirmPattern")).doClick();return null;});
+        Thread.sleep(1000);
+        edt(()->{JTree tree=(JTree)find(panel,"namespaces");var root=(DefaultMutableTreeNode)tree.getModel().getRoot();var ns=(DefaultMutableTreeNode)root.getChildAt(root.getChildCount()-1);require(ns.getChildCount()==2,"Builder endpoint did not appear in tree");var child=(DefaultMutableTreeNode)ns.getChildAt(1);tree.setSelectionPath(new TreePath(child.getPath()));if(((JCheckBox)find(panel,"onlyInvalid")).isSelected())((JCheckBox)find(panel,"onlyInvalid")).doClick();tabs().setSelectedIndex(0);return null;});
+        send(client,base+"/items/42");waitRows(1);
+        edt(()->{require(table("calls").getValueAt(0,5).equals(""),"New pattern must have empty spec");((JButton)find(unmatched,"clearUnmatched")).doClick();require(((JTable)find(unmatched,"unmatchedTable")).getRowCount()==0,"Clear unmatched failed");return null;});
+        snapshot("unmatched-cleared-dark");
+        edt(()->{((Window)unmatched).dispose();return null;});
+    }
+    private static Container window(String name)throws Exception {
+        for(int i=0;i<100;i++){Container found=edt(()->{for(Window w:Window.getWindows())if(w.isVisible()&&name.equals(w.getName()))return w;return null;});if(found!=null)return found;Thread.sleep(100);}
+        throw new AssertionError("Window not found: "+name);
     }
     private static void send(HttpClient client,String url)throws Exception{require(client.send(HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(10)).build(),HttpResponse.BodyHandlers.discarding()).statusCode()==200,"Fixture request failed");}
     private static void waitRows(int count)throws Exception{for(int i=0;i<100;i++){if(edt(()->table("calls").getRowCount())==count)return;Thread.sleep(100);}throw new AssertionError("Expected "+count+" rows");}

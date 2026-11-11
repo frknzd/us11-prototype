@@ -257,6 +257,52 @@ class VerificationUiUnitTest extends TestUtils {
         if (failure.get() != null) throw new AssertionError(failure.get());
     }
 
+    @Test
+    void unmatchedPanelRefreshAndClearNeverChangesEndpointCalls() throws Exception {
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(
+                () -> {
+                    try {
+                        RestExtractor ex = new RestExtractor();
+                        ApiNamespace ns = ex.addNamespace("http://localhost");
+                        ex.addEndpoint(ns, "/posts/[ID]");
+                        ex.startExtraction(ns);
+                        ex.record(call("n=1"));
+                        ex.record(
+                                new ApiCall(
+                                        HttpMethod.GET,
+                                        "http://localhost/private-unmatched",
+                                        200,
+                                        "",
+                                        ""));
+                        UnmatchedPathsPanel panel = new UnmatchedPathsPanel(ex, ns);
+                        JTable table = (JTable) find(panel, "unmatchedTable");
+                        assertEquals(1, table.getRowCount());
+                        table.setRowSelectionInterval(0, 0);
+                        ex.record(
+                                new ApiCall(
+                                        HttpMethod.GET,
+                                        "http://localhost/private-unmatched",
+                                        200,
+                                        "",
+                                        ""));
+                        panel.refresh();
+                        assertEquals(2, table.getValueAt(0, 1));
+                        assertEquals(0, table.getSelectedRow());
+                        assertFalse(
+                                new ApiDocumentationWriter()
+                                        .write(ex.getReport(ns))
+                                        .contains("private-unmatched"));
+                        button(panel, "clearUnmatched").doClick();
+                        assertEquals(0, table.getRowCount());
+                        assertEquals(1, ex.getReport(ns).getEndpoints().get(0).getCalls().size());
+                    } catch (Throwable error) {
+                        failure.set(error);
+                    }
+                });
+        if (failure.get() != null) throw new AssertionError(failure.get());
+    }
+
     private static Component find(Container parent, String name) {
         for (Component c : parent.getComponents()) {
             if (name.equals(c.getName())) return c;

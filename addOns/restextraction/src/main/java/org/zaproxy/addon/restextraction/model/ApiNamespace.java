@@ -41,6 +41,11 @@ public class ApiNamespace {
     // Read on the proxy threads for every call, changed from the Swing thread now and then.
     private final List<Endpoint> endpoints = new CopyOnWriteArrayList<>();
     private volatile boolean extracting;
+    private final UnmatchedPaths unmatched = new UnmatchedPaths();
+
+    public UnmatchedPaths getUnmatchedPaths() {
+        return unmatched;
+    }
 
     /**
      * @param baseUrl an absolute URL with a scheme and a host, optionally a port and a base path
@@ -157,11 +162,13 @@ public class ApiNamespace {
                 recorded = true;
             }
         }
+        if (!recorded) unmatched.add(rest);
         return recorded;
     }
 
     /** Forgets the recorded calls of every endpoint. The endpoints and the running state stay. */
     public void clear() {
+        unmatched.clear();
         for (Endpoint endpoint : endpoints) {
             endpoint.clear();
         }

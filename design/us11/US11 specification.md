@@ -187,7 +187,7 @@ A call is verified against its endpoint's spec in these steps; a step that ends 
 | SPEC-U02 | Unmatched paths are kept as distinct decoded paths with a call count; at most 1000 distinct paths, after that only a total of further calls grows. |
 | SPEC-U03 | Clearing the namespace's calls clears its unmatched paths; removing the namespace removes them; adding a pattern leaves them unchanged. |
 | SPEC-U04 | Unmatched paths never influence verdicts, tree counts or the documentation. |
-| SPEC-U05 | The pattern builder shows one chip per path part, all literal at first; a click toggles literal ↔ variable. A literal chip is not editable; a variable chip has an editable name. |
+| SPEC-U05 | The pattern builder shows one chip per path part, literal at first where SPEC-U08 allows it; unsafe literal parts start as variables. A click toggles literal ↔ variable when permitted. A literal chip is not editable; a variable chip has an editable name. |
 | SPEC-U06 | A variable's default name is the part's text with every character outside `A–Z a–z 0–9 _` replaced by `_`; a name already used gets `_2`, `_3`, …; a variable can't be renamed to an empty name. |
 | SPEC-U07 | A path with an empty part (`//`) or without parts (`/`) cannot become a pattern; the builder says why. |
 | SPEC-U08 | A part that is `.` or `..`, or contains `[`, `]`, `%` or whitespace, can only be a variable chip. |
