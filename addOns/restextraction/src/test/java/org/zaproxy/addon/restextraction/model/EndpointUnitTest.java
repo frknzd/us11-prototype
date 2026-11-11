@@ -56,7 +56,7 @@ class EndpointUnitTest {
         List<RecordedCall> calls = endpoint.createReport().getCalls();
         assertThat(calls, hasSize(1));
         assertThat(calls.get(0).getCall(), is(equalTo(call)));
-        assertThat(calls.get(0).getArguments(), is(equalTo(Map.of("POST_ID", "1223"))));
+        assertThat(calls.get(0).getPathArguments(), is(equalTo(Map.of("POST_ID", "1223"))));
     }
 
     @Test
@@ -206,7 +206,7 @@ class EndpointUnitTest {
 
         // Then
         RecordedCall kept = endpoint.createReport().getCalls().get(0);
-        assertThat(kept.getArguments(), is(equalTo(Map.of("NAME", "John Doe"))));
+        assertThat(kept.getPathArguments(), is(equalTo(Map.of("NAME", "John Doe"))));
     }
 
     // ER10, ER11: the report

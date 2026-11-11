@@ -297,7 +297,8 @@ class ApiNamespaceUnitTest {
         // Then
         assertThat(recorded, is(true));
         assertThat(
-                callsOf(namespace, 0).get(0).getArguments(), is(equalTo(Map.of("POST_ID", "1"))));
+                callsOf(namespace, 0).get(0).getPathArguments(),
+                is(equalTo(Map.of("POST_ID", "1"))));
     }
 
     @Test
@@ -432,10 +433,10 @@ class ApiNamespaceUnitTest {
 
         // Then
         assertThat(
-                callsOf(namespace, 0).get(0).getArguments(),
+                callsOf(namespace, 0).get(0).getPathArguments(),
                 is(equalTo(Map.of("ID", "1", "POST_ID", "10"))));
         assertThat(
-                callsOf(namespace, 1).get(0).getArguments(),
+                callsOf(namespace, 1).get(0).getPathArguments(),
                 is(equalTo(Map.of("USER_ID", "1", "ID", "10"))));
     }
 

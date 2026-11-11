@@ -57,7 +57,7 @@ class RecordedCallUnitTest {
         // Given
         RecordedCall recorded = new RecordedCall(CALL, Map.of("POST_ID", "1223"));
         // When / Then
-        assertThat(recorded.getArguments(), is(equalTo(Map.of("POST_ID", "1223"))));
+        assertThat(recorded.getPathArguments(), is(equalTo(Map.of("POST_ID", "1223"))));
     }
 
     @Test
@@ -69,7 +69,8 @@ class RecordedCallUnitTest {
         arguments.put("COMMENT_ID", "3");
         RecordedCall recorded = new RecordedCall(CALL, arguments);
         // When / Then
-        assertThat(recorded.getArguments().keySet(), contains("USER_ID", "POST_ID", "COMMENT_ID"));
+        assertThat(
+                recorded.getPathArguments().keySet(), contains("USER_ID", "POST_ID", "COMMENT_ID"));
     }
 
     // RP1: can't be modified
@@ -79,7 +80,7 @@ class RecordedCallUnitTest {
         // Given
         RecordedCall recorded = new RecordedCall(CALL, Map.of("POST_ID", "1223"));
         // When
-        Map<String, String> arguments = recorded.getArguments();
+        Map<String, String> arguments = recorded.getPathArguments();
         // Then
         assertThrows(UnsupportedOperationException.class, () -> arguments.put("POST_ID", "1"));
     }
@@ -93,7 +94,7 @@ class RecordedCallUnitTest {
         // When
         arguments.put("POST_ID", "1");
         // Then
-        assertThat(recorded.getArguments(), is(equalTo(Map.of("POST_ID", "1223"))));
+        assertThat(recorded.getPathArguments(), is(equalTo(Map.of("POST_ID", "1223"))));
     }
 
     @Test
@@ -109,7 +110,9 @@ class RecordedCallUnitTest {
     void shouldThrowWhenArgumentsAreNull() {
         // When
         NullPointerException e =
-                assertThrows(NullPointerException.class, () -> new RecordedCall(CALL, null));
+                assertThrows(
+                        NullPointerException.class,
+                        () -> new RecordedCall(CALL, (Map<String, String>) null));
         // Then
         assertThat(e.getMessage(), is(equalTo("arguments")));
     }

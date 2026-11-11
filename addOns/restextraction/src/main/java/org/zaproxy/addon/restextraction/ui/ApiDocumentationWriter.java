@@ -100,9 +100,9 @@ public class ApiDocumentationWriter {
         StringBuilder html = new StringBuilder();
         String method = "<b>" + call.getMethod() + "</b>";
         html.append(paragraph(text("call", method, String.valueOf(call.getStatusCode()))));
-        if (!recorded.getArguments().isEmpty()) {
+        if (!recorded.getPathArguments().isEmpty()) {
             List<String> arguments = new ArrayList<>();
-            for (Map.Entry<String, String> argument : recorded.getArguments().entrySet()) {
+            for (Map.Entry<String, String> argument : recorded.getPathArguments().entrySet()) {
                 arguments.add(escape(argument.getKey()) + " = " + escape(argument.getValue()));
             }
             html.append(paragraph(text("arguments", String.join(", ", arguments))));

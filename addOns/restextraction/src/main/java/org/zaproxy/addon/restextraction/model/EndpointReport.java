@@ -83,7 +83,7 @@ public final class EndpointReport {
     private static Map<String, Map<String, Integer>> valuesSeenIn(List<RecordedCall> calls) {
         Map<String, Map<String, Integer>> values = new LinkedHashMap<>();
         for (RecordedCall call : calls) {
-            for (Map.Entry<String, String> argument : call.getArguments().entrySet()) {
+            for (Map.Entry<String, String> argument : call.getPathArguments().entrySet()) {
                 values.computeIfAbsent(argument.getKey(), name -> new LinkedHashMap<>())
                         .merge(argument.getValue(), 1, Integer::sum);
             }

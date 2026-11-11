@@ -431,6 +431,22 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
         detailArea.setForeground(UIManager.getColor("TextArea.foreground"));
         ApiCall call = selected.getCall();
         StringBuilder detail = new StringBuilder();
+        var request = call.getRequest();
+        if (!request.getQuery().isEmpty() || !request.getHeaders().isEmpty() || request.hasBody()) {
+            detail.append(text("detail.request.query"))
+                    .append('\n')
+                    .append(request.getQuery())
+                    .append("\n\n");
+            detail.append(text("detail.request.headers")).append('\n');
+            for (var header : request.getHeaders()) {
+                detail.append(header.getName()).append(": ").append(header.getValue()).append('\n');
+            }
+            detail.append('\n')
+                    .append(text("detail.request.body"))
+                    .append('\n')
+                    .append(request.getBody())
+                    .append("\n\n");
+        }
         detail.append(Constant.messages.getString("restextraction.report.headers")).append('\n');
         detail.append(call.getResponseHeaders().strip()).append("\n\n");
         detail.append(Constant.messages.getString("restextraction.report.body")).append('\n');

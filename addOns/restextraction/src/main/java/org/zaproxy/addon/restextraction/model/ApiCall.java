@@ -34,6 +34,7 @@ public class ApiCall {
     private final String responseBody;
     private final Instant time;
     private final String responseHeaders;
+    private final RequestData request;
 
     /**
      * @param url the full URL, still percent-encoded. A query is dropped, it is not part of the
@@ -48,6 +49,17 @@ public class ApiCall {
             int statusCode,
             String responseHeaders,
             String responseBody) {
+        this(method, url, statusCode, responseHeaders, responseBody, RequestData.none());
+    }
+
+    public ApiCall(
+            HttpMethod method,
+            String url,
+            int statusCode,
+            String responseHeaders,
+            String responseBody,
+            RequestData request) {
+        this.request = Objects.requireNonNull(request, "request");
         this.method = Objects.requireNonNull(method, "method");
 
         // Split the URL at the first '?' to remove the query string, if present.
@@ -57,6 +69,10 @@ public class ApiCall {
         this.responseBody = Objects.requireNonNull(responseBody, "responseBody");
         // The moment we saw the call, not the moment ZAP sent the request.
         this.time = Instant.now();
+    }
+
+    public RequestData getRequest() {
+        return request;
     }
 
     public HttpMethod getMethod() {

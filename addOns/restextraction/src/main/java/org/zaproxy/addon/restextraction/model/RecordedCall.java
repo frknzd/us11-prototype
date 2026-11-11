@@ -21,42 +21,48 @@ package org.zaproxy.addon.restextraction.model;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * A call as it was recorded under one endpoint, together with the value of each variable in that
- * endpoint's pattern. For {@code /posts/[POST_ID]} and the call {@code /posts/7}, the arguments are
- * {@code POST_ID=7}. The same call can be recorded under two endpoints, each with its own
- * arguments.
- */
+/** One endpoint's immutable view of a call, parsed exactly once when recorded. */
 public final class RecordedCall {
-
     private final ApiCall call;
-    private final Map<String, String> arguments;
+    private final ParsedRequest request;
 
-    /**
-     * @param call the call, shared and not copied because it never changes
-     * @param arguments the value of each variable, in the order of the template
-     * @throws NullPointerException if the call, the arguments or one of their names or values is
-     *     null
-     */
+    /** Compatibility construction for existing US10 clients and regression fixtures. */
     public RecordedCall(ApiCall call, Map<String, String> arguments) {
         this.call = Objects.requireNonNull(call, "call");
         Map<String, String> copy =
                 new LinkedHashMap<>(Objects.requireNonNull(arguments, "arguments"));
-        if (copy.containsKey(null) || copy.containsValue(null)) {
+        if (copy.containsKey(null) || copy.containsValue(null))
             throw new NullPointerException("arguments");
-        }
-        this.arguments = Collections.unmodifiableMap(copy);
+        this.request = RequestParser.parse(call.getRequest(), copy);
+    }
+
+    public RecordedCall(ApiCall call, ParsedRequest request) {
+        this.call = Objects.requireNonNull(call, "call");
+        this.request = Objects.requireNonNull(request, "request");
     }
 
     public ApiCall getCall() {
         return call;
     }
 
-    /** Returns the value of each variable, in template order. The map can't be changed. */
-    public Map<String, String> getArguments() {
-        return arguments;
+    public ParsedRequest getRequest() {
+        return request;
+    }
+
+    public List<Argument> getArguments() {
+        return request.getArguments();
+    }
+
+    public Map<String, String> getPathArguments() {
+        Map<String, String> path = new LinkedHashMap<>();
+        for (Argument argument : getArguments()) {
+            if (argument.getLocation() == ArgumentLocation.PATH)
+                path.put(argument.getName(), argument.getValue());
+        }
+        return Collections.unmodifiableMap(path);
     }
 }

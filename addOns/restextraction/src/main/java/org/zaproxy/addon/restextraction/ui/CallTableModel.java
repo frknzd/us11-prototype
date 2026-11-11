@@ -147,7 +147,7 @@ public class CallTableModel extends AbstractTableModel {
 
     private static String argumentsOf(RecordedCall call) {
         List<String> arguments = new ArrayList<>();
-        for (Map.Entry<String, String> argument : call.getArguments().entrySet()) {
+        for (Map.Entry<String, String> argument : call.getPathArguments().entrySet()) {
             arguments.add(argument.getKey() + " = " + argument.getValue());
         }
         return String.join(", ", arguments);

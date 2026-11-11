@@ -19,15 +19,25 @@
  */
 package org.zaproxy.addon.restextraction;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.parosproxy.paros.Constant;
 import org.parosproxy.paros.core.proxy.ProxyListener;
 import org.parosproxy.paros.network.HttpHeader;
+import org.parosproxy.paros.network.HttpHeaderField;
 import org.parosproxy.paros.network.HttpMessage;
 import org.parosproxy.paros.network.HttpResponseHeader;
 import org.zaproxy.addon.restextraction.model.ApiCall;
+import org.zaproxy.addon.restextraction.model.BodyState;
+import org.zaproxy.addon.restextraction.model.Header;
 import org.zaproxy.addon.restextraction.model.HttpMethod;
+import org.zaproxy.addon.restextraction.model.MediaType;
+import org.zaproxy.addon.restextraction.model.RequestData;
 import org.zaproxy.addon.restextraction.model.RestExtractor;
 
 /**
@@ -79,7 +89,42 @@ public class RestTrafficListener implements ProxyListener {
         int status = msg.getResponseHeader().getStatusCode();
         String responseHeaders = msg.getResponseHeader().toString();
 
-        return new ApiCall(method, url, status, responseHeaders, bodyOf(msg));
+        return new ApiCall(method, url, status, responseHeaders, bodyOf(msg), toRequestData(msg));
+    }
+
+    private RequestData toRequestData(HttpMessage msg) {
+        HttpHeader header = msg.getRequestHeader();
+        List<Header> headers = new ArrayList<>();
+        for (HttpHeaderField field : header.getHeaders()) {
+            headers.add(new Header(field.getName(), field.getValue()));
+        }
+        String contentType =
+                Objects.requireNonNullElse(header.getHeader(HttpHeader.CONTENT_TYPE), "");
+        String query =
+                Objects.requireNonNullElse(msg.getRequestHeader().getURI().getEscapedQuery(), "");
+        if (msg.getRequestBody().length() == 0)
+            return new RequestData(query, headers, contentType, "", BodyState.NONE);
+        if (isBinary(header))
+            return new RequestData(
+                    query,
+                    headers,
+                    contentType,
+                    Constant.messages.getString("restextraction.body.binary"),
+                    BodyState.BINARY);
+        Charset charset = StandardCharsets.UTF_8;
+        try {
+            if (header.getCharset() != null) charset = Charset.forName(header.getCharset());
+        } catch (IllegalArgumentException ignored) {
+            // Unsupported charset must not discard the rest of a captured call.
+        }
+        String body = new String(msg.getRequestBody().getContent(), charset);
+        BodyState state = body.length() > MAX_BODY_LENGTH ? BodyState.CUT : BodyState.TEXT;
+        if (state == BodyState.CUT)
+            body =
+                    body.substring(0, MAX_BODY_LENGTH)
+                            + "\n"
+                            + Constant.messages.getString("restextraction.body.cut");
+        return new RequestData(query, headers, contentType, body, state);
     }
 
     /** The response body as text, cut when it is large and replaced by a mark when it is binary. */
@@ -103,7 +148,18 @@ public class RestTrafficListener implements ProxyListener {
      * Only a Content-Type that names a type that is not text makes a body binary. Without a
      * Content-Type the body is kept: showing too much is better than hiding the answer of an API.
      */
-    private static boolean isBinary(HttpResponseHeader header) {
-        return header.getHeader(HttpHeader.CONTENT_TYPE) != null && !header.isText();
+    private static boolean isBinary(HttpHeader header) {
+        String raw = header.getHeader(HttpHeader.CONTENT_TYPE);
+        if (raw == null) return false;
+        if (header instanceof HttpResponseHeader) return !header.isText();
+        // HttpHeader.isText() defaults to true for requests; inspect the request media type.
+        String type = MediaType.normalise(raw);
+        return !(type.isEmpty()
+                || type.startsWith("text/")
+                || MediaType.isJson(type)
+                || MediaType.isForm(type)
+                || type.endsWith("+xml")
+                || type.equals("application/xml")
+                || type.equals("application/javascript"));
     }
 }

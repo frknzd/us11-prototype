@@ -435,6 +435,14 @@ ZAP run from source (`./gradlew :zap:run`) with the add-on built from the US11 b
 
 ---
 
+## Implementation notes (private prototype)
+
+- RD1–RD7, MT1–MT7, JR1–JR19 and RP1–RP23 are implemented in `RequestParsingUnitTest`; some planned rows are grouped into a single method, while parameterized rows run several invocations. Planned-case counts and executed invocation counts are deliberately distinct.
+- `RequestCaptureUnitTest` adds TL1–TL7 coverage using real `HttpMessage`s, alongside the existing listener regression tests. `RestExtractionPanelUnitTest.shouldShowCapturedRequestInPlainText` exercises the early request-detail UI on the EDT.
+- Legacy path-map assertions now use `RecordedCall.getPathArguments()`; `getArguments()` is the designed ordered argument list. The legacy map constructor remains as a compatibility convenience, with the same null/order/immutability assertions.
+- `JsonReader` uses iterative frames instead of recursive descent: 50,000 levels cannot overflow the Java stack; validation continues beyond the extraction-depth limit without retaining unbounded path strings.
+- Actual outcomes and limitations are in `docs/implementation-status.md`. Unimplemented groups remain planned, not passed.
+
 ## 5. Counts (for the sign-off card)
 
 | Level | Test cases | Test classes (planned) |

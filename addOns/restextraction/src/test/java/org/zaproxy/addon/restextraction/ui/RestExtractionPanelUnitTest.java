@@ -66,7 +66,10 @@ import org.junit.jupiter.api.Test;
 import org.zaproxy.addon.restextraction.ExtensionRestExtraction;
 import org.zaproxy.addon.restextraction.model.ApiCall;
 import org.zaproxy.addon.restextraction.model.ApiNamespace;
+import org.zaproxy.addon.restextraction.model.BodyState;
+import org.zaproxy.addon.restextraction.model.Header;
 import org.zaproxy.addon.restextraction.model.HttpMethod;
+import org.zaproxy.addon.restextraction.model.RequestData;
 import org.zaproxy.addon.restextraction.model.RestExtractor;
 import org.zaproxy.zap.testutils.TestUtils;
 
@@ -777,6 +780,34 @@ class RestExtractionPanelUnitTest extends TestUtils {
                     assertThat(
                             field("textFilter").getClientProperty("JTextField.placeholderText"),
                             is("Filter, for example POST_ID = 1 or 404"));
+                });
+    }
+
+    @Test
+    void shouldShowCapturedRequestInPlainText() throws Exception {
+        onSwingThread(this::addStartedNamespace);
+        var request =
+                new RequestData(
+                        "tag=a&tag=b",
+                        List.of(new Header("X-Token", "<secret>")),
+                        "application/json",
+                        "{\"title\":\"Hi\"}",
+                        BodyState.TEXT);
+        extractor.record(
+                new ApiCall(
+                        HttpMethod.POST,
+                        BASE_URL + "/posts/1/comments",
+                        200,
+                        "HTTP/1.1 200 OK",
+                        "",
+                        request));
+        waitForRows(1);
+        onSwingThread(
+                () -> {
+                    ((JTable) find(panel, "calls")).setRowSelectionInterval(0, 0);
+                    assertThat(detail(), containsString("Request query\ntag=a&tag=b"));
+                    assertThat(detail(), containsString("X-Token: <secret>"));
+                    assertThat(detail(), containsString("Request body\n{\"title\":\"Hi\"}"));
                 });
     }
 

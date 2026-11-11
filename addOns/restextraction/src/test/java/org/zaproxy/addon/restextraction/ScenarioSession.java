@@ -114,7 +114,7 @@ final class ScenarioSession {
     static List<String> argumentsOf(EndpointReport endpoint, String name) {
         List<String> values = new ArrayList<>();
         for (RecordedCall call : endpoint.getCalls()) {
-            values.add(call.getArguments().get(name));
+            values.add(call.getPathArguments().get(name));
         }
         return values;
     }
