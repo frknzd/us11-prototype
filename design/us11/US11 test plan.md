@@ -441,6 +441,8 @@ ZAP run from source (`./gradlew :zap:run`) with the add-on built from the US11 b
 - `RequestCaptureUnitTest` adds TL1–TL7 coverage using real `HttpMessage`s, alongside the existing listener regression tests. `RestExtractionPanelUnitTest.shouldShowCapturedRequestInPlainText` exercises the early request-detail UI on the EDT.
 - Legacy path-map assertions now use `RecordedCall.getPathArguments()`; `getArguments()` is the designed ordered argument list. The legacy map constructor remains as a compatibility convenience, with the same null/order/immutability assertions.
 - `JsonReader` uses iterative frames instead of recursive descent: 50,000 levels cannot overflow the Java stack; validation continues beyond the extraction-depth limit without retaining unbounded path strings.
+- `ParameterTypesUnitTest` implements PT-S/I/D/B groups; `VerificationUnitTest` implements FN/PS/OS, ES except endpoint-level ES9, SI and VD. Tests intentionally retain exact decimal comparisons and original JSON number spellings.
+- Two implementation helpers refine the class design without changing rules: package-private `NumericGrammar` (shared linear numeric scanner) and `SpecValidationException` (structured localization key/arguments). Field names use tokenized steps, never regex matching.
 - Actual outcomes and limitations are in `docs/implementation-status.md`. Unimplemented groups remain planned, not passed.
 
 ## 5. Counts (for the sign-off card)

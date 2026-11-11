@@ -24,6 +24,14 @@
 - Fixed a discovered ZAP API trap: base `HttpHeader.isText()` defaults to true for requests, so request binary detection uses normalized media types instead of silently classifying images as text.
 - Shared OneDrive test plan updated with a prototype acceptance annex/history row after SHA-256 concurrency check and backup (`.local/testplan/before-us11-prototype-20261111-223921.docx` in the workspace). Existing US10 status was not overwritten.
 
+## Checkpoint 3 — specification and verification model
+
+- Added immutable endpoint/operation specifications and item factories, strict parameter types, exact BigInteger/BigDecimal ranges, token-based field selectors and structured verdict/check/violation values.
+- Covered partial specifications, required values, nested containers, wildcard specificity, duplicate items/headers, content-type/body compatibility, malformed bodies, warning-only validity, preflight/empty neutrality and violation ordering.
+- Added package-private `NumericGrammar` to share bounded non-regex numeric scanning and `SpecValidationException` to carry localization keys/arguments instead of hard-coding UI validation messages.
+- **586 tests passing**, 0 failures/errors/skips. Current aggregate model coverage: 1083/1114 lines (97.2%), 762/819 branches (93.0%). Stricter per-parser/type gates are not yet all met; final acceptance must report and address those gaps rather than treating aggregate coverage as sufficient.
+- Specification editing has not yet been connected to endpoints or the UI; ES9 path-name validation belongs to the next integration checkpoint.
+
 ## Pending
 
-Verification, report integration, complete primary UI, unmatched paths, deterministic demo and full US11 acceptance are not yet implemented. Manual GUI acceptance and final coverage gates remain pending.
+Report integration, complete primary UI, unmatched paths, deterministic demo and full US11 acceptance are not yet implemented. Manual GUI acceptance and final per-class coverage gates remain pending.
