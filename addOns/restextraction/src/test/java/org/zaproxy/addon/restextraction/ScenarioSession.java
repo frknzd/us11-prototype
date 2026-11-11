@@ -24,13 +24,18 @@ import static org.hamcrest.Matchers.is;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.parosproxy.paros.network.HttpMalformedHeaderException;
 import org.parosproxy.paros.network.HttpMessage;
 import org.zaproxy.addon.restextraction.model.ApiCall;
 import org.zaproxy.addon.restextraction.model.ApiNamespace;
 import org.zaproxy.addon.restextraction.model.EndpointReport;
+import org.zaproxy.addon.restextraction.model.Header;
 import org.zaproxy.addon.restextraction.model.RecordedCall;
 import org.zaproxy.addon.restextraction.model.RestExtractor;
+import org.zaproxy.addon.restextraction.model.SpecItem;
+import org.zaproxy.addon.restextraction.model.UrlPath;
+import org.zaproxy.addon.restextraction.model.Verdict;
 import org.zaproxy.addon.restextraction.ui.ApiDocumentationWriter;
 
 /**
@@ -76,6 +81,40 @@ final class ScenarioSession {
 
     void send(String method, String url, int status, String contentType, String body) {
         send(listener, method, url, status, contentType, body);
+    }
+
+    void send(
+            String method,
+            String url,
+            int status,
+            List<Header> requestHeaders,
+            String requestContentType,
+            String requestBody) {
+        HttpMessage message = message(method, url, status, JSON, "{}");
+        for (Header header : requestHeaders)
+            message.getRequestHeader().addHeader(header.getName(), header.getValue());
+        if (!requestContentType.isEmpty())
+            message.getRequestHeader().setHeader("Content-Type", requestContentType);
+        message.setRequestBody(requestBody);
+        assertThat(listener.onHttpRequestSend(message), is(true));
+        assertThat(listener.onHttpResponseReceive(message), is(true));
+    }
+
+    void spec(ApiNamespace namespace, String template, SpecItem item) {
+        extractor.addSpecItem(namespace, template, item);
+    }
+
+    void addEndpoint(ApiNamespace namespace, String template) {
+        extractor.addEndpoint(namespace, template);
+    }
+
+    Map<UrlPath, Integer> unmatched(ApiNamespace namespace) {
+        return extractor.getUnmatchedPaths(namespace);
+    }
+
+    Verdict verdict(ApiNamespace namespace, int endpoint, int call) {
+        EndpointReport report = endpoint(namespace, endpoint);
+        return report.getVerdict(report.getCalls().get(call));
     }
 
     /** Sends the response through the given listener, which must let the traffic pass. */

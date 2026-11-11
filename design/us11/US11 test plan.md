@@ -452,6 +452,8 @@ ZAP run from source (`./gradlew :zap:run`) with the add-on built from the US11 b
 - `UnmatchedPathsUnitTest` covers UM/PD/UP, namespace unmatched-path lifecycle and facade snapshots. UI support tests cover refresh/selection/clear and documentation exclusion; the real GUI smoke additionally exercises the modal chip builder and normal endpoint registration.
 - Resolved a contradiction in the prototype acceptance copy: SPEC-U08 forbids whitespace literals, whereas old PD8 expected `my doc` to become a literal. Unsafe parts now start as variables, and PD8 expects `[my_doc]`; safe Unicode literals still percent-encode. SPEC-U05 is qualified accordingly. This refinement is explicit and leaves the workspace/team design originals unchanged for review.
 - Observer notifications now also refresh unmatched data and newly registered patterns, without treating unmatched traffic as recorded calls. The legacy no-notification test was replaced with explicit notification plus zero endpoint-call assertions; namespace context menus now include Unmatched paths.
+- Final automated acceptance adds `VerificationScenarioTest` (SC-V1–SC-V13), `DiagnosticCatalogUnitTest` and panel coverage for PN-E1/E4/E5/E6/E7/E9. The final run executes 632 automated test invocations with no failures; this invocation count is not a claim that all 258 planned rows are separate JUnit methods.
+- Manual M-V cases remain pending unless explicitly recorded in `docs/implementation-status.md`; automated GUI smoke evidence is not a substitute for human sign-off.
 - Actual outcomes and limitations are in `docs/implementation-status.md`. Unimplemented groups remain planned, not passed.
 
 ## 5. Counts (for the sign-off card)

@@ -70,6 +70,18 @@
 - The Help add-on is intentionally not installed in the prototype (mandatory add-ons only). The packaged help HTML is available directly; manual Help navigation is pending unless the user requests that extra core add-on.
 - Build, formatting, **605 tests** and packaging pass after documentation changes. No remote exists.
 
-## Pending
+## Checkpoint 8 — acceptance handover
 
-Final per-case acceptance/coverage audit and handover. Remaining manual cases, including Help navigation and human review of interaction ergonomics, must be reported separately from the automated GUI smoke.
+- Added `VerificationScenarioTest` for SC-V1–SC-V13, `DiagnosticCatalogUnitTest` for the CW/SM/MSG catalogue and form/table branches, and edge-case tests for grammar boundaries, encoding, warnings and value objects. Panel tests now also cover namespace-disabled specification, sorted selection, coloured diagnostic text, confirmation decline, range removal and PN-E9 contrast in light/dark FlatLaf.
+- Details use a plain-text styled pane: traffic remains inert, while generated ✓/✗/⚠ lines receive semantic colour. Documentation specification tables are grouped by method.
+- **632 tests passing**, 0 failures/errors/skips; Spotless and packaging pass. Fresh real-ZAP UI smoke passed after the final UI change.
+- Coverage: total 92.62% lines / 90.10% branches; model 99.47% / 96.09%; root 98.70% / 90.00%; UI 86.75% / 82.09%. Parser/type classes have 100% lines; branch coverage is at least 95% except NumericGrammar 95.16%, RequestParser 98.15%, JsonReader 99.32% and FieldName 98.39% (all above 95%). Large Swing panels/dialogs remain below the logic-class gates; PatternBuilderDialog is exercised by the real GUI smoke but not by JaCoCo unit tests.
+- Design traceability checker: 0 problems. This does not prove that every planned row has a one-to-one JUnit method; several rows are grouped.
+- Manual cases are **not** marked passed. Automated real-GUI evidence covers parts of M-V1–M-V5 and M-V7. M-V6 burst responsiveness, M-V8 restart/session loss, M-V9 Juice Shop and M-V10 human review remain pending. Help navigation is pending because the optional core Help add-on is intentionally not installed in the isolated runtime.
+- Final archive: `addOns/restextraction/build/zapAddOn/bin/restextraction-alpha-0.0.1.zap`. Isolation confirmed: existing ZAP stays on 127.0.0.1:8080; the prototype listens only on 127.0.0.1:8091; the fixture is loopback-only.
+
+## Remaining limitations
+
+- Pending human/manual checks above.
+- UI-heavy Swing coverage is below the aspirational per-class coverage targets.
+- Inherited upstream workflows remain in the snapshot. The published branch is `us11-implementation`, not `main`, so main-branch CI/release workflows are not triggered by this push.

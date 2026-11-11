@@ -46,9 +46,7 @@ public final class Base64Type extends ParameterType {
                 s.isEmpty()
                         || standard && url
                         || padding > 2
-                        || (padding == 0
-                                ? s.length() % 4 == 1
-                                : s.length() % 4 != 0 || (s.length() - padding) % 4 != 4 - padding);
+                        || (padding == 0 ? s.length() % 4 == 1 : s.length() % 4 != 0);
         return bad ? invalid(a, "grammar") : Optional.empty();
     }
 

@@ -51,6 +51,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JTextPane;
 import javax.swing.JTree;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
@@ -58,6 +59,8 @@ import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
+import javax.swing.text.JTextComponent;
+import javax.swing.text.StyleConstants;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreePath;
 import org.junit.jupiter.api.AfterEach;
@@ -590,7 +593,9 @@ class RestExtractionPanelUnitTest extends TestUtils {
         // Then
         onSwingThread(
                 () -> {
-                    assertThat(find(panel, "detail") instanceof JTextArea, is(true));
+                    assertThat(find(panel, "detail") instanceof JTextPane, is(true));
+                    assertThat(
+                            ((JTextPane) find(panel, "detail")).getContentType(), is("text/plain"));
                     assertThat(detail(), containsString("<script>alert(1)</script>"));
                 });
     }
@@ -794,6 +799,9 @@ class RestExtractionPanelUnitTest extends TestUtils {
                     addStartedNamespace();
                     select(childrenOf(namespaceNodes().get(0)).get(0));
                     assertThat(((JTabbedPane) find(panel, "tabs")).isEnabledAt(2), is(true));
+                    select(namespaceNodes().get(0));
+                    assertThat(((JTabbedPane) find(panel, "tabs")).isEnabledAt(2), is(false));
+                    select(childrenOf(namespaceNodes().get(0)).get(0));
                     extractor.addSpecItem(
                             selectedNamespace(),
                             TEMPLATE,
@@ -813,11 +821,25 @@ class RestExtractionPanelUnitTest extends TestUtils {
                     JTable calls = (JTable) find(panel, "calls");
                     assertThat(calls.getValueAt(0, 5), is("✓"));
                     assertThat(calls.getValueAt(1, 5), is("✗ 1"));
+                    calls.getRowSorter().toggleSortOrder(5);
+                    calls.getRowSorter().toggleSortOrder(5);
+                    assertThat(calls.getValueAt(0, 5), is("✗ 1"));
+                    calls.setRowSelectionInterval(0, 0);
+                    assertThat(detail(), containsString("expected Integer"));
                     ((JCheckBox) find(panel, "onlyInvalid")).doClick();
                     assertThat(calls.getRowCount(), is(1));
                     calls.setRowSelectionInterval(0, 0);
                     assertThat(detail(), containsString("expected Integer"));
                     assertThat(callCount(), containsString("1 of 2 calls"));
+                    JTextPane detailPane = (JTextPane) find(panel, "detail");
+                    int errorAt = detail().indexOf("✗ path POST_ID");
+                    assertThat(
+                            StyleConstants.getForeground(
+                                    detailPane
+                                            .getStyledDocument()
+                                            .getCharacterElement(errorAt)
+                                            .getAttributes()),
+                            is(VerificationText.colour('✗')));
                     assertThat(
                             labelOf(childrenOf(namespaceNodes().get(0)).get(0)),
                             containsString("✓ 1"));
@@ -893,7 +915,7 @@ class RestExtractionPanelUnitTest extends TestUtils {
     }
 
     private String detail() {
-        return ((JTextArea) find(panel, "detail")).getText();
+        return ((JTextComponent) find(panel, "detail")).getText();
     }
 
     /** Waits a few timer ticks until the call table has this many rows. */

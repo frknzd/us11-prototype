@@ -79,6 +79,41 @@ class RequestCaptureUnitTest extends TestUtils {
     }
 
     @Test
+    void TL_V2_TL_V4_emptyMetadataUtf8AndUnknownCharset() throws Exception {
+        HttpMessage plain = message("", "");
+        plain.setRequestHeader(
+                "GET http://127.0.0.1:8092/posts/1 HTTP/1.1\r\nA: 1\r\nB: 2\r\nA: 3\r\n\r\n");
+        var none = capture(plain).getRequest();
+        assertEquals("", none.getQuery());
+        assertEquals("", none.getContentType());
+        assertEquals(BodyState.NONE, none.getBodyState());
+        assertEquals(
+                List.of("A", "B", "A"), none.getHeaders().stream().map(h -> h.getName()).toList());
+        for (String contentType : List.of("", "text/plain; charset=not-a-real-charset")) {
+            HttpMessage utf8 = message(contentType, "");
+            utf8.setRequestBody("café".getBytes(StandardCharsets.UTF_8));
+            assertEquals("café", capture(utf8).getRequest().getBody());
+        }
+    }
+
+    @Test
+    void TL_V5_recordFailurePreservesRequestAndResponse() throws Exception {
+        HttpMessage message = message("application/json", "{\"n\":1}");
+        String request = message.getRequestHeader().toString();
+        String response = message.getResponseHeader().toString();
+        byte[] bytes = message.getRequestBody().getBytes().clone();
+        RestExtractor extractor = mock(RestExtractor.class);
+        org.mockito.Mockito.doThrow(new IllegalStateException("fixture failure"))
+                .when(extractor)
+                .record(org.mockito.ArgumentMatchers.any());
+        assertTrue(new RestTrafficListener(extractor).onHttpResponseReceive(message));
+        assertEquals(request, message.getRequestHeader().toString());
+        assertEquals(response, message.getResponseHeader().toString());
+        org.junit.jupiter.api.Assertions.assertArrayEquals(
+                bytes, message.getRequestBody().getBytes());
+    }
+
+    @Test
     void TL3_cutLargeText() throws Exception {
         var r = capture(message("application/json", "x".repeat(65537))).getRequest();
         assertEquals(BodyState.CUT, r.getBodyState());

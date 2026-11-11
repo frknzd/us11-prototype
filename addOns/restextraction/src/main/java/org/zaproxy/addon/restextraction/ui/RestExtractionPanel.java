@@ -61,6 +61,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JTextPane;
 import javax.swing.JTree;
 import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
@@ -75,6 +76,8 @@ import javax.swing.event.PopupMenuListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableRowSorter;
 import javax.swing.text.DefaultCaret;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
@@ -132,6 +135,7 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
     private final SpecificationPanel specificationPanel;
     private final JCheckBox onlyInvalidBox = new JCheckBox(VerificationText.text("onlyInvalid"));
     private boolean showFullBody;
+    private boolean detailDark;
 
     private final JTextField baseUrlField = new JTextField();
     private final JTextField patternField = new JTextField();
@@ -161,7 +165,7 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
     private final JTextField textFilter = new JTextField();
     private final JLabel callCount = new JLabel();
     private final JTabbedPane tabs = new JTabbedPane();
-    private final JTextArea detailArea = new JTextArea();
+    private final JTextPane detailArea = new JTextPane();
 
     private final AtomicBoolean reportOutOfDate = new AtomicBoolean();
     private final Timer redrawTimer = new Timer(REDRAW_INTERVAL_MS, e -> redrawIfOutOfDate());
@@ -194,6 +198,8 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
         patternField.getDocument().addDocumentListener(clearMessage);
         removeButton.addActionListener(e -> onRemove());
         fullBodyBox.addActionListener(e -> onToggleFullBody());
+        detailArea.addPropertyChangeListener(
+                "UI", e -> SwingUtilities.invokeLater(this::onSelectCall));
         namespaceTree.addTreeSelectionListener(e -> onSelectNamespace());
         tabs.addChangeListener(e -> onSelectTab());
         callTable
@@ -518,13 +524,16 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
                                     : text("detail.nobody"))
                     .append("\n\n");
         }
+        int checkStart = -1, checkEnd = -1;
         int selectedRow = callTable.getSelectedRow();
         if (selectedRow >= 0) {
             detail.append(VerificationText.text("checks")).append('\n');
+            checkStart = detail.length();
             for (String line :
                     checkWriter.lines(
                             callModel.getVerdictAt(callTable.convertRowIndexToModel(selectedRow))))
                 detail.append(line).append('\n');
+            checkEnd = detail.length();
             detail.append('\n');
         }
         detail.append(Constant.messages.getString("restextraction.report.headers")).append('\n');
@@ -536,9 +545,35 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
                         : text("detail.nobody"));
         String shown = detail.toString();
         // Setting the same text again would move the view back to the top on every redraw.
-        if (!shown.equals(detailArea.getText())) {
+        boolean changed = !shown.equals(detailArea.getText());
+        if (changed) {
             detailArea.setText(shown);
             detailArea.setCaretPosition(0);
+        }
+        boolean dark = DisplayUtils.isDarkLookAndFeel();
+        if (changed || dark != detailDark) {
+            styleChecks(shown, checkStart, checkEnd);
+            detailDark = dark;
+        }
+    }
+
+    /**
+     * Styled plain text: traffic stays inert; only generated check lines receive semantic colours.
+     */
+    private void styleChecks(String shown, int start, int end) {
+        SimpleAttributeSet normal = new SimpleAttributeSet();
+        StyleConstants.setForeground(normal, UIManager.getColor("TextArea.foreground"));
+        detailArea.getStyledDocument().setCharacterAttributes(0, shown.length(), normal, true);
+        for (int at = start; at >= 0 && at < end; ) {
+            int next = shown.indexOf('\n', at);
+            if (next < 0 || next > end) next = end;
+            char mark = shown.charAt(at);
+            if (mark == '✓' || mark == '✗' || mark == '⚠') {
+                SimpleAttributeSet colour = new SimpleAttributeSet();
+                StyleConstants.setForeground(colour, VerificationText.colour(mark));
+                detailArea.getStyledDocument().setCharacterAttributes(at, next - at, colour, false);
+            }
+            at = next + 1;
         }
     }
 
@@ -925,7 +960,6 @@ public class RestExtractionPanel extends AbstractPanel implements ExtractionObse
         tabs.setName("tabs");
         detailArea.setName("detail");
         detailArea.setEditable(false);
-        detailArea.setLineWrap(true);
         detailArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, new JLabel().getFont().getSize()));
         JSplitPane calls =
                 new JSplitPane(

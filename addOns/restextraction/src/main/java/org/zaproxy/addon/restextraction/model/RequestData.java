@@ -24,6 +24,7 @@ import java.util.Objects;
 
 /** Immutable wire-level request, captured before any parsing. */
 public final class RequestData {
+    private static final RequestData NONE = new RequestData("", List.of(), "", "", BodyState.NONE);
     private final String query;
     private final List<Header> headers;
     private final String contentType;
@@ -44,7 +45,7 @@ public final class RequestData {
     }
 
     public static RequestData none() {
-        return new RequestData("", List.of(), "", "", BodyState.NONE);
+        return NONE;
     }
 
     public String getQuery() {

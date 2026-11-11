@@ -258,6 +258,107 @@ class VerificationUiUnitTest extends TestUtils {
     }
 
     @Test
+    void PN_E4_SM9_confirmationNoPreservesItemsAndBodyGetShowsHint() throws Exception {
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(
+                () -> {
+                    try {
+                        var decision = new java.util.concurrent.atomic.AtomicBoolean(false);
+                        RestExtractor ex = new RestExtractor();
+                        ApiNamespace ns = ex.addNamespace("http://localhost");
+                        ex.addEndpoint(ns, "/posts/[ID]");
+                        SpecificationPanel panel =
+                                new SpecificationPanel(ex) {
+                                    private static final long serialVersionUID = 1L;
+
+                                    @Override
+                                    protected boolean confirm(String message) {
+                                        return decision.get();
+                                    }
+                                };
+                        panel.showEndpoint(ns, "/posts/[ID]");
+                        combo(panel, "specKind").setSelectedItem(SpecItemKind.BODY_FIELD);
+                        assertTrue(((JLabel) find(panel, "specHint")).getText().contains("GET"));
+                        field(panel, "specName").setText("title");
+                        button(panel, "saveItem").doClick();
+                        JTable table = (JTable) find(panel, "specItems");
+                        table.setRowSelectionInterval(0, 0);
+                        button(panel, "removeItem").doClick();
+                        assertEquals(2, table.getRowCount());
+                        decision.set(true);
+                        button(panel, "removeItem").doClick();
+                        assertEquals(0, table.getRowCount());
+                        combo(panel, "specKind").setSelectedItem(SpecItemKind.QUERY_PARAMETER);
+                        field(panel, "specName").setText("n");
+                        combo(panel, "specTYPE").setSelectedItem("Integer");
+                        field(panel, "specMIN").setText("1");
+                        field(panel, "specMAX").setText("10");
+                        button(panel, "saveItem").doClick();
+                        table.setRowSelectionInterval(1, 1);
+                        button(panel, "editItem").doClick();
+                        decision.set(false);
+                        combo(panel, "specTYPE").setSelectedItem("String");
+                        assertEquals("Integer", combo(panel, "specTYPE").getSelectedItem());
+                        assertEquals("10", field(panel, "specMAX").getText());
+                        decision.set(true);
+                        combo(panel, "specTYPE").setSelectedItem("String");
+                        assertEquals("", field(panel, "specMIN").getText());
+                        assertEquals("", field(panel, "specMAX").getText());
+                        button(panel, "saveItem").doClick();
+                        assertEquals("String", table.getValueAt(1, 3));
+                        assertEquals("", table.getValueAt(1, 4));
+                    } catch (Throwable error) {
+                        failure.set(error);
+                    }
+                });
+        if (failure.get() != null) throw new AssertionError(failure.get());
+    }
+
+    @Test
+    void PN_E9_semanticColoursHaveAtLeastThreeToOneContrast() throws Exception {
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(
+                () -> {
+                    var previous = javax.swing.UIManager.getLookAndFeel();
+                    try {
+                        for (String theme :
+                                List.of(
+                                        "com.formdev.flatlaf.FlatLightLaf",
+                                        "com.formdev.flatlaf.FlatDarkLaf")) {
+                            javax.swing.UIManager.setLookAndFeel(theme);
+                            java.awt.Color background =
+                                    javax.swing.UIManager.getColor("Panel.background");
+                            for (char mark : new char[] {'✓', '✗', '⚠'}) {
+                                double a = luminance(VerificationText.colour(mark)),
+                                        b = luminance(background);
+                                assertTrue(
+                                        (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) >= 3.0,
+                                        theme + " " + mark);
+                            }
+                        }
+                    } catch (Throwable error) {
+                        failure.set(error);
+                    } finally {
+                        try {
+                            javax.swing.UIManager.setLookAndFeel(previous);
+                        } catch (Exception error) {
+                            failure.set(error);
+                        }
+                    }
+                });
+        if (failure.get() != null) throw new AssertionError(failure.get());
+    }
+
+    private static double luminance(java.awt.Color colour) {
+        double[] rgb = {
+            colour.getRed() / 255.0, colour.getGreen() / 255.0, colour.getBlue() / 255.0
+        };
+        for (int i = 0; i < 3; i++)
+            rgb[i] = rgb[i] <= 0.04045 ? rgb[i] / 12.92 : Math.pow((rgb[i] + 0.055) / 1.055, 2.4);
+        return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+    }
+
+    @Test
     void unmatchedPanelRefreshAndClearNeverChangesEndpointCalls() throws Exception {
         AtomicReference<Throwable> failure = new AtomicReference<>();
         SwingUtilities.invokeAndWait(

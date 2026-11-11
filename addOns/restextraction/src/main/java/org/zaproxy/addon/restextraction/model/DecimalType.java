@@ -20,7 +20,6 @@
 package org.zaproxy.addon.restextraction.model;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,11 +38,8 @@ public final class DecimalType extends ParameterType {
     public static BigDecimal parseBound(String text) {
         if (!NumericGrammar.valid(text, true, false))
             throw new SpecValidationException("decimalBound");
-        try {
-            return new BigDecimal(text);
-        } catch (NumberFormatException e) {
-            throw new SpecValidationException("decimalBound");
-        }
+        // The scanner bounds both digit count and exponent, so precision/scale cannot overflow.
+        return new BigDecimal(text);
     }
 
     @Override
@@ -55,12 +51,7 @@ public final class DecimalType extends ParameterType {
             return invalid(a, "json", a.getJsonKind().name());
         if (!NumericGrammar.valid(a.getValue(), true, a.getJsonKind() != null))
             return invalid(a, "grammar");
-        BigDecimal n;
-        try {
-            n = new BigDecimal(a.getValue());
-        } catch (NumberFormatException e) {
-            return invalid(a, "grammar");
-        }
+        BigDecimal n = new BigDecimal(a.getValue());
         if (min != null && n.compareTo(min) < 0) return range(a, "below", min.toString());
         if (max != null && n.compareTo(max) > 0) return range(a, "above", max.toString());
         return Optional.empty();
@@ -70,8 +61,8 @@ public final class DecimalType extends ParameterType {
     public Optional<Warning> warningFor(Argument a) {
         if (a.getJsonKind() == JsonKind.NUMBER && NumericGrammar.valid(a.getValue(), true, true)) {
             BigDecimal n = new BigDecimal(a.getValue());
-            if (n.abs().setScale(0, RoundingMode.DOWN).compareTo(EXACT_LIMIT) > 0
-                    || Double.isInfinite(n.doubleValue()))
+            // Every double-overflow magnitude also exceeds this exact-integer boundary.
+            if (n.abs().compareTo(EXACT_LIMIT) > 0)
                 return Optional.of(
                         new Warning(
                                 WarningKind.PRECISION,

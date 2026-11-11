@@ -26,7 +26,7 @@ import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
-import javax.swing.JTextArea;
+import javax.swing.text.JTextComponent;
 import javax.swing.JTextField;
 import javax.swing.JTree;
 import javax.swing.SwingUtilities;
@@ -67,7 +67,7 @@ public final class PrototypeUiSmoke {
                 snapshot("specification-light");
                 edt(()->{tabs().setSelectedIndex(0);return null;});
                 send(client,base+"/posts/2?n=x");waitRows(2);
-                edt(()->{require("✓".equals(table("calls").getValueAt(0,5)),"Old call was not rejudged valid");require("✗ 1".equals(table("calls").getValueAt(1,5)),"Invalid call not marked");((JCheckBox)find(panel,"onlyInvalid")).doClick();require(table("calls").getRowCount()==1,"Invalid-only filter failed");table("calls").setRowSelectionInterval(0,0);require(((JTextArea)find(panel,"detail")).getText().contains("expected Integer"),"Missing diagnostic");return null;});
+                edt(()->{require("✓".equals(table("calls").getValueAt(0,5)),"Old call was not rejudged valid");require("✗ 1".equals(table("calls").getValueAt(1,5)),"Invalid call not marked");((JCheckBox)find(panel,"onlyInvalid")).doClick();require(table("calls").getRowCount()==1,"Invalid-only filter failed");table("calls").setRowSelectionInterval(0,0);require(((JTextComponent)find(panel,"detail")).getText().contains("expected Integer"),"Missing diagnostic");return null;});
                 snapshot("checks-light");
                 edt(()->{tabs().setSelectedIndex(2);table("specItems").setRowSelectionInterval(1,1);click("editItem");field("specMIN").setText("2");click("saveItem");tabs().setSelectedIndex(0);return null;});
                 waitRows(2);

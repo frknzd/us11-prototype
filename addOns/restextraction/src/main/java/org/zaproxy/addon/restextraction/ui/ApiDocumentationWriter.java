@@ -123,26 +123,34 @@ public class ApiDocumentationWriter {
         if (spec.isEmpty()) return paragraph(escape(VerificationText.text("noSpec")));
         StringBuilder html =
                 new StringBuilder(
-                        "<h4>" + escape(VerificationText.text("specification")) + "</h4><ul>");
-        for (var item : spec.items()) {
-            String description =
-                    item.getMethod().name()
-                            + " · "
-                            + VerificationText.text("kind." + item.getKind().name());
-            if (item.getParameter() != null) {
+                        "<h4>" + escape(VerificationText.text("specification")) + "</h4>");
+        for (HttpMethod method : HttpMethod.values()) {
+            if (spec.operation(method).isEmpty()) continue;
+            html.append("<h5>")
+                    .append(method.name())
+                    .append("</h5><table border=\"1\" cellpadding=\"4\" cellspacing=\"0\"><tr>");
+            for (String column : List.of("kind", "name", "type", "range", "required"))
+                html.append("<th>")
+                        .append(escape(VerificationText.text("column." + column)))
+                        .append("</th>");
+            html.append("</tr>");
+            for (var item : spec.items()) {
+                if (item.getMethod() != method) continue;
                 var p = item.getParameter();
-                description +=
-                        " · "
-                                + p.getName()
-                                + " · "
-                                + p.getType().getName()
-                                + " "
-                                + p.getType().describeRange();
-                if (p.isRequired()) description += " · " + VerificationText.text("field.REQUIRED");
-            } else if (!item.getMediaType().isEmpty()) description += " · " + item.getMediaType();
-            html.append("<li>").append(escape(description)).append("</li>");
+                List<String> cells =
+                        List.of(
+                                VerificationText.text("kind." + item.getKind().name()),
+                                p == null ? item.getMediaType() : p.getName(),
+                                p == null ? "" : p.getType().getName(),
+                                p == null ? "" : p.getType().describeRange(),
+                                p != null && p.isRequired() ? "✓" : "");
+                html.append("<tr>");
+                for (String cell : cells) html.append("<td>").append(escape(cell)).append("</td>");
+                html.append("</tr>");
+            }
+            html.append("</table>");
         }
-        return html.append("</ul>").toString();
+        return html.toString();
     }
 
     private String writeCall(RecordedCall recorded, Verdict verdict) {

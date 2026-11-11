@@ -80,7 +80,7 @@ final class JsonReader {
                             f.state = 4;
                         }
                     }
-                    default -> throw new IllegalStateException();
+                        // Frame states are private and assigned only by these transitions.
                 }
             } else if (f.state == 0 || f.state == 2) {
                 if (peek(']')) {
