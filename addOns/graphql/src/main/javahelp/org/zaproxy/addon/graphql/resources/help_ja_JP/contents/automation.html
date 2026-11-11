@@ -1,0 +1,71 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+    <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+    <TITLE>
+        GraphQL – 自動化フレームワーク対応
+    </TITLE>
+</HEAD>
+
+<BODY>
+<H1>GraphQL – 自動化フレームワーク対応</H1>
+このアドオンは自動化フレームワークに対応しています。
+<br><br>
+スパイダー実行時にエンドポイントが発見された場合、このアドオンはイントロスペクションを利用してGraphQLスキーマをインポートします。ただし、エンドポイントと (オプションで) スキーマファイルまたはURLが利用可能な場合は、それらを明示的に指定することを推奨します。
+
+<H2>ジョブ: graphql</H2>
+<i>graphql</i> ジョブを使用すると、ローカルファイルまたはURLからGraphQLスキーマをインポートできます。以下のパラメーターをサポートしています：
+<p>
+この内容は、動画「<a href="https://youtu.be/xuP00Ri460k">ZAP Chat 11 Automation Framework Part 5 - APIs</a>」で解説されています。
+<pre>
+  - type: graphql                      # GraphQL definition import
+    parameters:
+      endpoint:                        # String: the endpoint URL, default: null, no schema is imported
+      schemaUrl:                       # String: URL pointing to a GraphQL Schema, default: null, import using introspection on endpoint
+      schemaFile:                      # String: Local file path of a GraphQL Schema, default: null, import using schemaUrl
+      queryGenEnabled:                 # Bool: Whether the Query Generator is enabled, default: true
+      maxQueryDepth:                   # Int: The maximum query generation depth, default: 5
+      lenientMaxQueryDepthEnabled:     # Bool: Whether or not Maximum Query Depth is enforced leniently, default: true
+      maxAdditionalQueryDepth:         # Int: The maximum additional query generation depth (used if enforced leniently), default: 5
+      maxArgsDepth:                    # Int: The maximum arguments generation depth, default: 5
+      optionalArgsEnabled:             # Bool: Whether or not Optional Arguments should be specified, default: true
+      argsType:                        # Enum [inline, variables, both]: How arguments are specified, default: both 
+      querySplitType:                  # Enum [leaf, root_field, operation]: The level for which a single query is generated, default: leaf
+      requestMethod:                   # Enum [post_json, post_graphql, get]: The request method, default: post_json
+      cycleDetectionMode:              # Enum [disabled, quick, exhaustive]: The cycle detection mode, default: quick
+      maxCycleDetectionAlerts:         # Int: The maximum number of alerts to raise for detected cycles, default: 100
+      maxMessages:                     # Int: Maximum number of messages to import, default: 0, import all messages
+</pre>
+<p>
+When <code>maxMessages</code> is set (greater than 0), <a href="alerts.html">fingerprinting</a> and service method checks are skipped.
+</p>
+<p>
+This limit is soft: redirects are followed, so the number of messages persisted may exceed the configured value.
+</p>
+
+<H2>関連情報</H2>
+<table>
+    <tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td><a href="graphql.html">GraphQL</a></td>
+        <td>GraphQL アドオンの概要</td>
+    </tr>
+    <tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td><a href="options.html">GraphQL オプション</a></td>
+        <td>オプションのパラメーターに関する情報</td>
+    </tr>
+    <tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td><a href="variant.html">GraphQL バリアント</a></td>
+        <td>GraphQL バリアントに関する情報</td>
+    </tr>
+    <tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td><a href="alerts.html">GraphQL アラート</a></td>
+        <td>このアドオンによって発生するアラートに関する情報</td>
+    </tr>
+</table>
+
+</BODY>
+</HTML>

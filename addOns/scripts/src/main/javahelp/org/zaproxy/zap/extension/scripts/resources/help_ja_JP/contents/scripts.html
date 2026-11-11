@@ -1,0 +1,115 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>スクリプトコンソール</title>
+</head>
+<body>
+<h1>スクリプトコンソール</h1>
+<p>
+スクリプトコンソールアドオンを使用すると、ZAP内に組み込み可能で、ZAPの内部データ構造にアクセスできるスクリプトを実行できます。<br/>
+このアドオンは、以下のものを含む <a href="https://www.jcp.org/en/jsr/detail?id=223">JSR 223</a>をサポートする任意のスクリプト言語をサポートしています：
+<ul>
+<li>ECMAScript / JavaScript (<a href="https://www.zaproxy.org/docs/desktop/addons/graalvm-javascript/">GraalVM JavaScriptアドオン</a>経由)</li>
+<li><a href="https://www.zaproxy.org/docs/desktop/addons/zest/">Zest</a></li>
+<li>Groovy <a href="http://groovy-lang.org/">http://groovy-lang.org/</a></li>
+<li>Python <a href="http://www.jython.org">http://www.jython.org</a></li>
+<li>Ruby - <a href="http://jruby.org/">http://jruby.org/</a></li>
+<li>その他多数&mldr;</li> 
+</ul>
+
+<strong>&#x26a0;&#xfe0f; 警告 - スクリプトはZAPと同じ権限で実行されますので、信頼できないスクリプトは実行しないでください！</strong>
+
+<h2>スクリプトタイプ</h2>
+さまざまな種類のスクリプトがサポートされています：
+<ul>
+<li>スタンドアロン - 自己完結型のスクリプトで、手動で開始した場合にのみ実行されます</li>
+<li>アクティブルール - これらはアクティブスキャナーの一部として実行され、個別に有効化できます</li>
+<li>パッシブルール - これらはパッシブスキャナーの一部として実行され、個別に有効化できます</li> 
+<li>プロキシ - これらは「インライン」で実行され、すべてのリクエストとレスポンスを変更でき、個別に有効にできます。また、ブレークポイントをトリガーすることも可能です。</li> 
+<li>HTTP Sender - ZAPが送信するすべてのリクエストと受信するすべてのレスポンスに対して実行されるスクリプト。これには、プロキシされたメッセージ、アクティブスキャン中に送信されるメッセージ、ファザーなどが含まれます</li>
+<li>ターゲット - ターゲットURLとともに呼び出され、手動で開始した場合にのみ実行されるスクリプト</li>
+<li>認証 - コンテキストに対して認証が実行される際に呼び出されるスクリプトです。使用するには、コンテキストのスクリプトベース認証方式を設定する際に、スクリプトを選択する必要があります。 </li> 
+<li>スクリプト入力ベクトル - ZAPが正確に何を攻撃すべきかを定義するためのスクリプトです。</li>
+<li>エクステンダー - 新しい機能 (グラフィカル要素や新しいAPIエンドポイントを含む) を追加できるスクリプト</li>
+</ul>
+<strong>注:</strong> アドオンは追加のスクリプトタイプを追加できます。これらについては、対応するアドオンのヘルプで説明されています。
+<p>
+自動的に実行されるすべてのスクリプトは、初期状態では「無効」になっています。実行させるには、<a href="tree.html">スクリプト「ツリー」タブ</a>から有効化する必要があります。<br/>
+実行時にエラーが発生した場合、そのスクリプトは自動的に無効化されます。<br/>
+スクリプトを選択すると、<a href="console.html">スクリプトコンソールタブ</a>に最後のエラーが表示されます。<br/>
+ターゲット指定型スクリプトは、「サイト」タブまたは「履歴」タブのレコードを右クリックし、「スクリプトで呼び出す…」メニュー項目を選択することで呼び出すことができます。
+</p>
+<p>
+
+すべてのスクリプト言語はすべてのスクリプトタイプに使用できますが、ZAP マーケットプレイスからダウンロードされた言語のみが通常テンプレートを持っています。ただし、別の言語のテンプレートを適応させることができる場合があります。<br/>
+お気に入りの言語がマーケットプレイスで利用できない場合は、「オンライン / 問題の報告」メニュー項目から新しい問題を報告してください。<br/>
+</p>
+
+<h2>グローバル変数</h2>
+変数はクラス org.zaproxy.zap.extension.script.ScriptVars を介して、すべてのスクリプト間で共有できます。<br/>
+例えば、JavaScriptではこのクラスを次のように使用できます：<br/><br/>
+<code>
+org.zaproxy.zap.extension.script.ScriptVars.setGlobalVar("var.name","value")<br/>
+org.zaproxy.zap.extension.script.ScriptVars.getGlobalVar("var.name")<br/>
+</code>
+
+<h2>スクリプト変数</h2>
+変数は同じ org.zaproxy.zap.extension.script.ScriptVars クラスを介して、同じスクリプトの個別の呼び出し間で共有できます。<br/>
+例えば、JavaScriptではこのクラスを次のように使用できます：<br/><br/>
+<code>
+org.zaproxy.zap.extension.script.ScriptVars.setScriptVar(this.context, "var.name","value")<br/>
+org.zaproxy.zap.extension.script.ScriptVars.getScriptVar(this.context, "var.name")<br/>
+</code>
+<br/>
+これらのメソッドは、ScriptContext へのアクセスを提供するスクリプト言語 (JavaScriptなど) からのみ使用可能であることに注意してください。他のスクリプト言語の場合、ZAPバージョン2.7.0以降で変数はスクリプトの名前を手動で指定することでアクセス/設定できます：<br/><br/>
+<code>
+org.zaproxy.zap.extension.script.ScriptVars.setScriptVar("ScriptName", "var.name","value")<br/>
+org.zaproxy.zap.extension.script.ScriptVars.getScriptVar("ScriptName", "var.name")<br/>
+</code>
+
+<h2>カスタムグローバル/スクリプト変数</h2>
+新しいバージョンのZAP (2.8.0以降) では、文字列だけでなく、リストやマップなど、任意のタイプのカスタムグローバル/スクリプト変数を設定できます。<br/>
+JavaScriptでは、次のようにアクセス/設定されます：<br/><br/>
+<code>
+var ScriptVars = Java.type("org.zaproxy.zap.extension.script.ScriptVars")
+
+ScriptVars.setScriptCustomVar(this.context, "var.name", {x: 1, y: 3})
+print(ScriptVars.getScriptCustomVar(this.context, "var.name").y) // Prints 3
+
+ScriptVars.setGlobalCustomVar("var.name", ["A", "B", "C", "D"])
+print(ScriptVars.getGlobalCustomVar("var.name")[2]) // Prints C
+</code>
+
+<h2>関連情報</h2>
+<table>
+<tr>
+	<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+	<td><a href="console.html">スクリプトコンソール タブ</a></td><td></td>
+</tr>
+<tr>
+	<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+	<td><a href="tree.html">スクリプト「ツリー」タブ</a></td><td></td>
+</tr>
+</table>
+
+<h2>外部リンク</h2>
+<table>
+<tr>
+	<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+	<td><a href="https://github.com/zaproxy/zaproxy/wiki/InternalDetails">https://github.com/zaproxy/zaproxy/wiki/InternalDetails</a></td>
+	<td>ZAP内部オブジェクト</td></tr>
+<tr>
+	<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+	<td><a href="https://javadoc.io/doc/org.zaproxy/zap">https://javadoc.io/doc/org.zaproxy/zap</a></td>
+	<td>ZAP Javadoc</td>
+</tr>
+<tr>
+	<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+	<td><a href="https://wiki.openjdk.java.net/display/Nashorn/Rhino+Migration+Guide">https://wiki.openjdk.java.net/display/Nashorn/Rhino+Migration+Guide</a></td>
+	<td>Rhino移行ガイド</td>
+</tr>
+</table>
+
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<TITLE>
+GraphQL サポート
+</TITLE>
+</HEAD>
+<BODY>
+<H1>GraphQL サポート</H1>
+このアドオンを使用すると、GraphQL定義をインポートし、その定義から生成されたクエリを送信できます。
+<br><br>
+アドオンは、スコープ内にある限り、GraphQL定義を自動的に検出してスパイダー処理を行います。 <br>
+このスパイダー機能はZAP 2.10.0以降でサポートされています。
+
+<H2>UI</H2>
+「インポート」メニューに以下の項目が追加されます：
+<ul>
+<li>GraphQLスキーマのインポート</li>
+</ul>
+
+<H3>Max Messages</H3>
+The dialogue allows users to limit the number of messages imported.
+A value of <code>0</code> (the default) imports all messages.
+
+<h3>エンドポイントURLの形式</h3>
+エンドポイントURLは次の形式を取ります：<br>
+<code>scheme://authority/path</code><br>
+ファイルからインポートする場合、URIの全コンポーネントが必須となります。
+
+<h3>オプションパネル</h3>
+ツール -> オプション -> GraphQLの下にGraphQLオプションパネルが追加されます。これらのオプションを使用して、クエリジェネレーターの出力を制御できます。
+
+<H2>API</H2>
+APIに以下の操作が追加されます：
+<h3> ビュー </h3>
+<ul>
+<li> optionArgsType </li>
+<li> optionMaxArgsDepth </li>
+<li> optionMaxQueryDepth </li>
+<li> optionOptionalArgsEnabled </li>
+<li> optionQuerySplitType </li>
+<li> optionQueryGenEnabled </li>
+<li> optionRequestMethod </li>
+</ul>
+
+<h3> アクション </h3>
+<ul>
+<li> importFile (endurl*, file*, maxMessages) </li>
+<li> importUrl (endurl*, url, maxMessages) </li>
+<li> setOptionArgsType (String*) </li>
+<li> setOptionMaxArgsDepth (Integer*) </li>
+<li> setOptionMaxQueryDepth (Integer*) </li>
+<li> setOptionOptionalArgsEnabled (Boolean*) </li>
+<li> setOptionQueryGenEnabled (Boolean*) </li>
+<li> setOptionQuerySplitType (String*) </li>
+<li> setOptionRequestMethod (String*) </li>
+</ul>
+<code>endurl</code> は、前述の<code>エンドポイントURL</code>形式をサポートします。
+The optional <code>maxMessages</code> parameter limits the number of messages imported; omit or use <code>0</code> to import all.
+
+定義は同期的にインポートされ、警告は返されます。
+
+<H2>コマンドライン</H2>
+以下のコマンドラインオプションが追加されます：
+<ul>
+<li>-graphqlfile &lt;filename&gt;  : ファイルからGraphQL定義をインポートします</li>
+<li>-graphqlurl &lt;url&gt;  : URLからGraphQL定義をインポートします</li>
+<li>-graphqlendurl &lt;url&gt;  : エンドポイントURLを設定します</li>
+</ul>
+
+定義は同期的にインポートされ、警告があればコマンドラインに表示されます。
+
+<H2>関連情報</H2>
+<table>
+    <tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td><a href="options.html">GraphQL オプション</a></td>
+        <td>オプションのパラメーターに関する情報</td>
+    </tr>
+    <tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td><a href="variant.html">GraphQL バリアント</a></td>
+        <td>GraphQL バリアントに関する情報</td>
+    </tr>
+    <tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td><a href="automation.html">GraphQL 自動化</a></td>
+        <td>自動化フレームワーク対応に関する情報</td>
+    </tr>
+    <tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td><a href="alerts.html">GraphQL アラート</a></td>
+        <td>このアドオンによって発生するアラートに関する情報</td>
+    </tr>
+</table>
+
+</BODY>
+</HTML>

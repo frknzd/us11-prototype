@@ -1,0 +1,490 @@
+@startuml US11 SD-V1 record a call with its request
+' US11 sequence diagrams v0.1, page 1. Every message is a method of "US11 class diagram.puml"
+' or of "US10 class diagram v3.puml". Returns are drawn where the value is used.
+title SD-V1: Recording a call with its request (UC-V2 steps 1–3, OC-3)
+legend bottom right
+  <color:#1B5E20><b>bold green</b></color>: new or changed in US11   <color:#A8A8A8>grey</color>: US10 behaviour, unchanged
+  participants: <back:#C8E6C9> new </back> <back:#FFF3C4> changed </back> <back:#F6F6F6><color:#A8A8A8> US10 </color></back>
+endlegend
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam sequenceMessageAlign left
+skinparam maxMessageSize 260
+skinparam note {
+    BackgroundColor #FFF4DA
+    BorderColor #D8C9A3
+}
+hide footbox
+
+boundary ":ZAP proxy" as zap
+participant "l : RestTrafficListener" as l #FFF3C4
+participant "rd : RequestData" as rd #C8E6C9
+participant "call : ApiCall" as call #FFF3C4
+participant "ex : RestExtractor" as ex #FFF3C4
+participant "ns : ApiNamespace" as ns #FFF3C4
+participant "e : Endpoint" as e #FFF3C4
+participant "u : EndpointPattern" as u #F6F6F6
+participant "RequestParser" as rp #C8E6C9
+participant "MediaType" as mt #C8E6C9
+participant "jr : JsonReader" as jr #C8E6C9
+participant "pr : ParsedRequest" as pr #C8E6C9
+participant "rc : RecordedCall" as rc #FFF3C4
+participant "um : UnmatchedPaths" as um #C8E6C9
+
+zap -[#BBBBBB]> l : <color:#A8A8A8>onHttpResponseReceive(msg)</color>
+activate l
+l -[#2E7D32]> l : <color:#1B5E20><b>toApiCall(msg)</b></color>
+l -[#2E7D32]> l : <color:#1B5E20><b>toRequestData(msg)</b></color>
+note right of l : query, headers in order, Content-Type,\nbody (SPEC-C01 … C06)
+l -[#2E7D32]> l : <color:#1B5E20><b>bodyOf(header, body)</b></color>
+l -[#2E7D32]> rd ** : <color:#1B5E20><b>«create» RequestData(query, headers, contentType, body, bodyState)</b></color>
+l -[#2E7D32]> call ** : <color:#1B5E20><b>«create» ApiCall(method, url, statusCode, responseHeaders, responseBody, rd)</b></color>
+l -[#BBBBBB]> ex : <color:#A8A8A8>record(call)</color>
+activate ex
+loop ns in namespaces
+    ex -[#2E7D32]> ns : <color:#1B5E20><b>record(call)</b></color>
+    activate ns
+    note right of ns : US10: not extracting or not covered → false.\nrest = path after the base path.
+    loop e in endpoints
+        ns -[#2E7D32]> e : <color:#1B5E20><b>record(call, rest)</b></color>
+        activate e
+        e -[#BBBBBB]> u : <color:#A8A8A8>matches(rest)</color>
+        u --> e : matched
+        opt matched
+            e -[#BBBBBB]> u : <color:#A8A8A8>argumentsOf(rest)</color>
+            u --> e : pathArguments
+            e -[#2E7D32]> call : <color:#1B5E20><b>getRequest()</b></color>
+            call --> e : rd
+            e -[#2E7D32]> rp : <color:#1B5E20><b>parse(rd, pathArguments)</b></color>
+            activate rp
+            rp -[#2E7D32]> mt : <color:#1B5E20><b>normalise(contentType)</b></color>
+            mt --> rp : type
+            rp -[#2E7D32]> rp : <color:#1B5E20><b>parsePairs(query, QUERY)</b></color>
+            note right of rp : SPEC-Q01 … Q08
+            alt isJson(type) and body state TEXT
+                rp -[#2E7D32]> mt : <color:#1B5E20><b>isJson(type)</b></color>
+                rp -[#2E7D32]> jr ** : <color:#1B5E20><b>«create» JsonReader(body, 10)</b></color>
+                rp -[#2E7D32]> jr : <color:#1B5E20><b>read()</b></color>
+                jr --> rp : body arguments (or malformed reason, SPEC-J01)
+                rp -[#2E7D32]> jr : <color:#1B5E20><b>isTooDeep()</b></color>
+            else isForm(type)
+                rp -[#2E7D32]> mt : <color:#1B5E20><b>isForm(type)</b></color>
+                rp -[#2E7D32]> rp : <color:#1B5E20><b>parsePairs(body, BODY)</b></color>
+            end
+            rp -[#2E7D32]> rp : <color:#1B5E20><b>parseHeaders(headers)</b></color>
+            note right of rp : limits: 200 arguments, depth 10 (SPEC-L01);\nnever throws
+            rp -[#2E7D32]> pr ** : <color:#1B5E20><b>«create» ParsedRequest(arguments, warnings, malformedBody, contentType, bodyChecked)</b></color>
+            rp --> e : pr
+            deactivate rp
+            e -[#2E7D32]> rc ** : <color:#1B5E20><b>«create» RecordedCall(call, pr)</b></color>
+            note right of e : calls.add(rc). Parsed once (SPEC-C08);\nverdicts are made later (SD-V3).
+        end
+        e --> ns : recorded
+        deactivate e
+    end
+    opt nothing recorded and the namespace covers the call
+        ns -[#2E7D32]> um : <color:#1B5E20><b>add(rest)</b></color>
+        note right of um : SPEC-U01, U02 (secondary)
+    end
+    ns --> ex : recorded
+    deactivate ns
+end
+note right of ex : US10: observers.callRecorded(ns) when recorded
+ex --> l
+deactivate ex
+l --> zap : true
+note right of zap : traffic passes unchanged (SPEC-C07)
+deactivate l
+@enduml
+
+@startuml US11 SD-V2 add a spec item
+' US11 sequence diagrams v0.1, page 2.
+title SD-V2: Adding a spec item (UC-V1, OC-1)
+legend bottom right
+  <color:#1B5E20><b>bold green</b></color>: new or changed in US11   <color:#A8A8A8>grey</color>: US10 behaviour, unchanged
+  participants: <back:#C8E6C9> new </back> <back:#FFF3C4> changed </back> <back:#F6F6F6><color:#A8A8A8> US10 </color></back>
+endlegend
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam sequenceMessageAlign left
+skinparam maxMessageSize 260
+skinparam note {
+    BackgroundColor #FFF4DA
+    BorderColor #D8C9A3
+}
+hide footbox
+
+actor Developer as dev
+participant "sp : SpecificationPanel" as sp #C8E6C9
+participant "f : SpecItemForm" as f #C8E6C9
+participant "IntegerType" as it #C8E6C9
+participant "t : IntegerType" as t #C8E6C9
+participant "ps : ParameterSpec" as ps #C8E6C9
+participant "FieldName" as fn #C8E6C9
+participant "SpecItem" as si #C8E6C9
+participant "ex : RestExtractor" as ex #FFF3C4
+participant "ns : ApiNamespace" as ns #FFF3C4
+participant "e : Endpoint" as e #FFF3C4
+participant "s : EndpointSpec" as s #C8E6C9
+participant "s2 : EndpointSpec" as s2 #C8E6C9
+participant "op : OperationSpec" as op #C8E6C9
+participant "items : SpecItemTableModel" as items #C8E6C9
+
+dev -[#2E7D32]> sp : <color:#1B5E20><b>chooses "Query parameter" in Add item</b></color>
+sp -[#2E7D32]> sp : <color:#1B5E20><b>onKindSelected()</b></color>
+sp -[#2E7D32]> f : <color:#1B5E20><b>setKind(QUERY_PARAMETER)</b></color>
+sp -[#2E7D32]> f : <color:#1B5E20><b>visibleFields()</b></color>
+f --> sp : METHOD, NAME, TYPE, MIN, MAX, REQUIRED
+note right of sp : only these fields are shown (SPEC-G04)
+
+dev -[#2E7D32]> sp : <color:#1B5E20><b>fills in GET, _limit, Integer, 1, 100, Save</b></color>
+sp -[#2E7D32]> sp : <color:#1B5E20><b>onSave()</b></color>
+loop each visible field
+    sp -[#2E7D32]> f : <color:#1B5E20><b>set(field, value)</b></color>
+end
+sp -[#2E7D32]> f : <color:#1B5E20><b>toItem()</b></color>
+activate f
+f -[#2E7D32]> it : <color:#1B5E20><b>parseBound("1")</b></color>
+f -[#2E7D32]> it : <color:#1B5E20><b>parseBound("100")</b></color>
+note right of it : bounds in the type's text grammar,\nmin ≤ max (SPEC-S11)
+f -[#2E7D32]> t ** : <color:#1B5E20><b>«create» IntegerType(min, max)</b></color>
+f -[#2E7D32]> ps ** : <color:#1B5E20><b>«create» ParameterSpec(QUERY, "_limit", t, false)</b></color>
+note right of ps : name not empty, no outer whitespace (SPEC-S08);\na Body field name is parsed here:
+ps -[#2E7D32]> fn : <color:#1B5E20><b>parse(name)</b></color>
+f -[#2E7D32]> si : <color:#1B5E20><b>parameter(GET, ps)</b></color>
+si --> f : item
+f --> sp : item
+deactivate f
+
+sp -[#2E7D32]> ex : <color:#1B5E20><b>addSpecItem(ns, template, item)</b></color>
+activate ex
+ex -[#2E7D32]> ns : <color:#1B5E20><b>addSpecItem(template, item)</b></color>
+ns -[#2E7D32]> e : <color:#1B5E20><b>addSpecItem(item)</b></color>
+activate e
+e -[#2E7D32]> s : <color:#1B5E20><b>with(item)</b></color>
+activate s
+alt item valid (SPEC-S03 … S13)
+    s -[#2E7D32]> op ** : <color:#1B5E20><b>«create» OperationSpec(GET, contentTypes, parameters)</b></color>
+    note right of op : adds the GET Method item when\nthere was none (SPEC-S04)
+    s -[#2E7D32]> s2 ** : <color:#1B5E20><b>«create» EndpointSpec(operations)</b></color>
+    s --> e : s2
+    note right of e : spec = s2 (one volatile write);\nverdicts.clear() (SPEC-V17)
+    e --> sp : done
+else refused
+    s --> sp : IllegalArgumentException(message)
+    note right of sp : form stays open, message shown,\nspec unchanged (SPEC-S14, G05)
+end
+deactivate s
+deactivate e
+deactivate ex
+
+sp -[#BBBBBB]> ex : <color:#A8A8A8>getReport(ns)</color>
+ex --> sp : report
+note right of sp : the endpoint's EndpointReport.getSpec()
+sp -[#2E7D32]> items : <color:#1B5E20><b>setSpec(spec)</b></color>
+note right of items : rows grouped by method (SPEC-G05);\nthe tree shows ✓/✗ at the next redraw (SD-V3)
+@enduml
+
+@startuml US11 SD-V3 make the report and verify
+' US11 sequence diagrams v0.1, page 3.
+title SD-V3: Making the report and verifying (UC-V2 steps 4–5, OC-4)
+legend bottom right
+  <color:#1B5E20><b>bold green</b></color>: new or changed in US11   <color:#A8A8A8>grey</color>: US10 behaviour, unchanged
+  participants: <back:#C8E6C9> new </back> <back:#FFF3C4> changed </back> <back:#F6F6F6><color:#A8A8A8> US10 </color></back>
+endlegend
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam sequenceMessageAlign left
+skinparam maxMessageSize 260
+skinparam note {
+    BackgroundColor #FFF4DA
+    BorderColor #D8C9A3
+}
+hide footbox
+
+participant "p : RestExtractionPanel" as p #FFF3C4
+participant "ex : RestExtractor" as ex #FFF3C4
+participant "ns : ApiNamespace" as ns #FFF3C4
+participant "e : Endpoint" as e #FFF3C4
+participant "s : EndpointSpec" as s #C8E6C9
+participant "op : OperationSpec" as op #C8E6C9
+participant "rc : RecordedCall" as rc #FFF3C4
+participant "pr : ParsedRequest" as pr #C8E6C9
+participant "MediaType" as mt #C8E6C9
+participant "ps : ParameterSpec" as ps #C8E6C9
+participant "fn : FieldName" as fn #C8E6C9
+participant "t : ParameterType" as t #C8E6C9
+participant "ch : Check" as ch #C8E6C9
+participant "v : Violation" as v #C8E6C9
+participant "vd : Verdict" as vd #C8E6C9
+participant "er : EndpointReport" as er #FFF3C4
+participant "ctm : CallTableModel" as ctm #FFF3C4
+
+note over p : Swing timer, at most every 500 ms after a call was\nrecorded, or after a spec change (US10 SD 3)
+p -[#BBBBBB]> p : <color:#A8A8A8>showReport(ns)</color>
+activate p
+p -[#BBBBBB]> ex : <color:#A8A8A8>getReport(ns)</color>
+activate ex
+ex -[#BBBBBB]> ns : <color:#A8A8A8>createReport()</color>
+activate ns
+loop e in endpoints
+    ns -[#2E7D32]> e : <color:#1B5E20><b>createReport()</b></color>
+    activate e
+    note right of e : s = spec, read once: one spec per report (SPEC-L02)
+    loop rc in a copy of calls
+        e -[#2E7D32]> e : <color:#1B5E20><b>verdictOf(rc, s)</b></color>
+        opt not in the cache for s (SPEC-V17)
+            e -[#2E7D32]> s : <color:#1B5E20><b>verify(rc)</b></color>
+            activate s
+            alt isEmpty()
+                s -[#2E7D32]> vd ** : <color:#1B5E20><b>«create» notVerified(false)</b></color>
+                note right of vd : no indicator (SPEC-V02)
+            else isPreflight(rc)
+                s -[#2E7D32]> vd ** : <color:#1B5E20><b>«create» notVerified(true)</b></color>
+                note right of vd : "preflight" (SPEC-V03)
+            else no operation for the method
+                s -[#2E7D32]> s : <color:#1B5E20><b>operation(method)</b></color>
+                s -[#2E7D32]> v ** : <color:#1B5E20><b>«create» Violation(UNSPECIFIED_METHOD, null, method, null, allowedMethods)</b></color>
+                s -[#2E7D32]> vd ** : <color:#1B5E20><b>«create» Verdict(checks, violations, unchecked, warnings)</b></color>
+                note right of vd : stops here (SPEC-V04)
+            else operation found
+                s -[#2E7D32]> op : <color:#1B5E20><b>verify(rc)</b></color>
+                activate op
+                op -[#2E7D32]> rc : <color:#1B5E20><b>getRequest()</b></color>
+                rc --> op : pr
+                opt contentTypes not empty and the call has a body
+                    op -[#2E7D32]> pr : <color:#1B5E20><b>getContentType()</b></color>
+                    op -[#2E7D32]> mt : <color:#1B5E20><b>normalise(contentType)</b></color>
+                    note right of op : not listed → UNSPECIFIED_CONTENT_TYPE (SPEC-V05)
+                end
+                op -[#2E7D32]> pr : <color:#1B5E20><b>isBodyMalformed()</b></color>
+                note right of op : true → MALFORMED_BODY, body checks skipped (SPEC-V06)
+                op -[#2E7D32]> rc : <color:#1B5E20><b>getArguments()</b></color>
+                loop a in arguments (request order)
+                    op -[#2E7D32]> op : <color:#1B5E20><b>find(a)</b></color>
+                    loop candidate items of a's location
+                        op -[#2E7D32]> ps : <color:#1B5E20><b>accepts(a, jsonBody)</b></color>
+                        ps -[#2E7D32]> fn : <color:#1B5E20><b>matches(name)</b></color>
+                        note right of fn : JSON body only; most specific wins:\nfn.isMoreSpecificThan(other) (SPEC-J10, J11)
+                    end
+                    alt item found
+                        op -[#2E7D32]> ps : <color:#1B5E20><b>check(a)</b></color>
+                        activate ps
+                        ps -[#2E7D32]> t : <color:#1B5E20><b>check(a)</b></color>
+                        note right of t : polymorphic: StringType, IntegerType,\nDecimalType or Base64Type (SPEC-T)
+                        t --> ps : violation or none
+                        ps -[#2E7D32]> ch ** : <color:#1B5E20><b>«create» Check(a, ps, violation)</b></color>
+                        ps --> op : ch
+                        deactivate ps
+                        op -[#2E7D32]> t : <color:#1B5E20><b>warningFor(a)</b></color>
+                        note right of t : PRECISION (SPEC-T11)
+                    else not found and declares(location), not a header
+                        op -[#2E7D32]> op : <color:#1B5E20><b>declares(location)</b></color>
+                        op -[#2E7D32]> v ** : <color:#1B5E20><b>«create» Violation(EXTRA_ARGUMENT, location, name, value, details)</b></color>
+                    else
+                        note right of op : unchecked (SPEC-V09)
+                    end
+                end
+                loop each required item without argument
+                    op -[#2E7D32]> v ** : <color:#1B5E20><b>«create» Violation(MISSING_ARGUMENT, location, name, null, details)</b></color>
+                end
+                op -[#2E7D32]> pr : <color:#1B5E20><b>getWarnings()</b></color>
+                note right of op : + REPEATED_PARAMETER per repeated name (SPEC-V12);\nviolations ordered (SPEC-V15)
+                op -[#2E7D32]> vd ** : <color:#1B5E20><b>«create» Verdict(checks, violations, unchecked, warnings)</b></color>
+                op --> s : vd
+                deactivate op
+            end
+            s --> e : vd
+            deactivate s
+        end
+    end
+    e -[#2E7D32]> er ** : <color:#1B5E20><b>«create» EndpointReport(template, callCounts, calls, s, verdicts)</b></color>
+    e --> ns : er
+    deactivate e
+end
+ns --> ex : report
+deactivate ns
+ex --> p : report
+deactivate ex
+p -[#BBBBBB]> p : <color:#A8A8A8>showCalls(report)</color>
+p -[#2E7D32]> ctm : <color:#1B5E20><b>setEndpoints(endpoints)</b></color>
+note right of ctm : Check column per row:\n✓, ✗ n, ⚠ or empty (SPEC-G06)
+p -[#2E7D32]> p : <color:#1B5E20><b>labelOf(node)</b></color>
+p -[#2E7D32]> er : <color:#1B5E20><b>getSpec()</b></color>
+p -[#2E7D32]> er : <color:#1B5E20><b>getValidCount()</b></color>
+p -[#2E7D32]> er : <color:#1B5E20><b>getInvalidCount()</b></color>
+note right of p : tree: plain without spec, ✓ green / ✗ red\nwith a spec (SPEC-G01, G02)
+deactivate p
+@enduml
+
+@startuml US11 SD-V4 show the checks of a call
+' US11 sequence diagrams v0.1, page 4.
+title SD-V4: Showing the checks of a call (UC-V3, UC-V4)
+legend bottom right
+  <color:#1B5E20><b>bold green</b></color>: new or changed in US11   <color:#A8A8A8>grey</color>: US10 behaviour, unchanged
+  participants: <back:#C8E6C9> new </back> <back:#FFF3C4> changed </back> <back:#F6F6F6><color:#A8A8A8> US10 </color></back>
+endlegend
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam sequenceMessageAlign left
+skinparam maxMessageSize 260
+skinparam note {
+    BackgroundColor #FFF4DA
+    BorderColor #D8C9A3
+}
+hide footbox
+
+actor Developer as dev
+participant "p : RestExtractionPanel" as p #FFF3C4
+participant "ctm : CallTableModel" as ctm #FFF3C4
+participant "rc : RecordedCall" as rc #FFF3C4
+participant "call : ApiCall" as call #FFF3C4
+participant "rd : RequestData" as rd #C8E6C9
+participant "w : ApiDocumentationWriter" as w #FFF3C4
+participant "cw : CheckWriter" as cw #C8E6C9
+participant "vd : Verdict" as vd #C8E6C9
+
+dev -[#2E7D32]> p : <color:#1B5E20><b>selects a row of the Calls table</b></color>
+p -[#2E7D32]> p : <color:#1B5E20><b>onSelectCall()</b></color>
+activate p
+p -[#BBBBBB]> ctm : <color:#A8A8A8>getCallAt(row)</color>
+ctm --> p : rc
+p -[#2E7D32]> ctm : <color:#1B5E20><b>getVerdictAt(row)</b></color>
+ctm --> p : vd
+group Request (SPEC-G07, D12)
+    p -[#BBBBBB]> rc : <color:#A8A8A8>getCall()</color>
+    rc --> p : call
+    p -[#2E7D32]> call : <color:#1B5E20><b>getRequest()</b></color>
+    call --> p : rd
+    p -[#2E7D32]> rd : <color:#1B5E20><b>getQuery()</b></color>
+    p -[#2E7D32]> rd : <color:#1B5E20><b>getHeaders()</b></color>
+    p -[#2E7D32]> rd : <color:#1B5E20><b>getBody()</b></color>
+    p -[#BBBBBB]> w : <color:#A8A8A8>formatBody(contentType, body)</color>
+    note right of w : indented when JSON; only with Full body (US10 D15)
+end
+group Checks
+    p -[#2E7D32]> cw : <color:#1B5E20><b>toHtml(vd)</b></color>
+    activate cw
+    cw -[#2E7D32]> vd : <color:#1B5E20><b>getChecks()</b></color>
+    loop each check
+        cw -[#2E7D32]> cw : <color:#1B5E20><b>message(check)</b></color>
+        note right of cw : ✓ query _limit = 5  (Integer 1..100)\n✗ path POST_ID = abc: expected Integer
+    end
+    cw -[#2E7D32]> vd : <color:#1B5E20><b>getViolations()</b></color>
+    loop each violation without a check
+        cw -[#2E7D32]> cw : <color:#1B5E20><b>message(violation)</b></color>
+        note right of cw : ✗ PUT is not in the spec (allowed: GET)
+    end
+    cw -[#2E7D32]> vd : <color:#1B5E20><b>getWarnings()</b></color>
+    loop each warning
+        cw -[#2E7D32]> cw : <color:#1B5E20><b>message(warning)</b></color>
+    end
+    cw -[#2E7D32]> vd : <color:#1B5E20><b>getUnchecked()</b></color>
+    note right of cw : unchecked arguments without a mark;\nevery text escaped (SPEC-L05)
+    cw --> p : html
+    deactivate cw
+end
+note right of p : Response part as in US10
+deactivate p
+
+== Documentation tab (UC-V4) ==
+dev -[#2E7D32]> p : <color:#1B5E20><b>opens the Documentation tab</b></color>
+p -[#BBBBBB]> w : <color:#A8A8A8>write(report)</color>
+activate w
+loop each endpoint
+    w -[#2E7D32]> w : <color:#1B5E20><b>writeEndpoint(er)</b></color>
+    w -[#2E7D32]> w : <color:#1B5E20><b>writeSpec(spec)</b></color>
+    note right of w : spec per method, or "No spec" (SPEC-G09)
+    loop each call
+        w -[#2E7D32]> w : <color:#1B5E20><b>writeCall(rc, vd)</b></color>
+        w -[#2E7D32]> cw : <color:#1B5E20><b>toHtml(vd)</b></color>
+    end
+end
+w --> p : html
+deactivate w
+@enduml
+
+@startuml US11 SD-V5 add a pattern from an unmatched path
+' US11 sequence diagrams v0.1, page 5. Secondary feature (D4).
+title SD-V5: Adding an endpoint pattern from an unmatched path (UC-V5, secondary)
+legend bottom right
+  <color:#1B5E20><b>bold green</b></color>: new or changed in US11   <color:#A8A8A8>grey</color>: US10 behaviour, unchanged
+  participants: <back:#C8E6C9> new </back> <back:#FFF3C4> changed </back> <back:#F6F6F6><color:#A8A8A8> US10 </color></back>
+endlegend
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam sequenceMessageAlign left
+skinparam maxMessageSize 260
+skinparam note {
+    BackgroundColor #FFF4DA
+    BorderColor #D8C9A3
+}
+hide footbox
+
+actor Developer as dev
+participant "p : RestExtractionPanel" as p #FFF3C4
+participant "up : UnmatchedPathsPanel" as up #C8E6C9
+participant "ex : RestExtractor" as ex #FFF3C4
+participant "ns : ApiNamespace" as ns #FFF3C4
+participant "um : UnmatchedPaths" as um #C8E6C9
+participant "d : PatternBuilderDialog" as d #C8E6C9
+participant "pd : PatternDraft" as pd #C8E6C9
+participant "path : UrlPath" as path #FFF3C4
+participant "u : EndpointPattern" as u #F6F6F6
+
+dev -[#2E7D32]> p : <color:#1B5E20><b>Unmatched paths… on a namespace</b></color>
+p -[#2E7D32]> p : <color:#1B5E20><b>onShowUnmatched()</b></color>
+p -[#2E7D32]> up ** : <color:#1B5E20><b>«create» UnmatchedPathsPanel(ex, ns)</b></color>
+up -[#2E7D32]> up : <color:#1B5E20><b>refresh()</b></color>
+up -[#2E7D32]> ex : <color:#1B5E20><b>getUnmatchedPaths(ns)</b></color>
+ex -[#2E7D32]> ns : <color:#1B5E20><b>getUnmatchedPaths()</b></color>
+ns --> ex : um
+ex -[#2E7D32]> um : <color:#1B5E20><b>counts()</b></color>
+um --> up : path → calls (copy)
+
+dev -[#2E7D32]> up : <color:#1B5E20><b>selects /api/42/comments, Add endpoint pattern</b></color>
+up -[#2E7D32]> up : <color:#1B5E20><b>onAddPattern()</b></color>
+up -[#2E7D32]> d ** : <color:#1B5E20><b>«create» PatternBuilderDialog(ex, ns, path)</b></color>
+d -[#2E7D32]> pd ** : <color:#1B5E20><b>«create» PatternDraft(path)</b></color>
+pd -[#BBBBBB]> path : <color:#A8A8A8>size()</color>
+loop i in parts
+    pd -[#BBBBBB]> path : <color:#A8A8A8>part(i)</color>
+    note right of pd : literal chip; default variable name\ncleaned (SPEC-U05, U06)
+end
+alt a part is empty (//) or there are no parts
+    note right of d : "can't become a pattern" (SPEC-U07)
+end
+
+loop until the developer is happy
+    dev -[#2E7D32]> d : <color:#1B5E20><b>clicks a chip</b></color>
+    d -[#2E7D32]> d : <color:#1B5E20><b>onToggle(i)</b></color>
+    d -[#2E7D32]> pd : <color:#1B5E20><b>canBeLiteral(i)</b></color>
+    note right of pd : ., .., [, ], %, whitespace → variable only (SPEC-U08)
+    d -[#2E7D32]> pd : <color:#1B5E20><b>toggle(i)</b></color>
+    opt rename a variable
+        dev -[#2E7D32]> d : <color:#1B5E20><b>types a name</b></color>
+        d -[#2E7D32]> d : <color:#1B5E20><b>onRename(i, name)</b></color>
+        d -[#2E7D32]> pd : <color:#1B5E20><b>rename(i, name)</b></color>
+    end
+    d -[#2E7D32]> pd : <color:#1B5E20><b>toTemplate()</b></color>
+    note right of pd : literal parts percent-encoded (SPEC-U09)
+    d -[#2E7D32]> pd : <color:#1B5E20><b>problem()</b></color>
+    pd -[#BBBBBB]> u ** : <color:#A8A8A8>«create» EndpointPattern(template)</color>
+    note right of u : US10 rules; refusal → problem text shown\nas the live preview (SPEC-U10)
+end
+
+dev -[#2E7D32]> d : <color:#1B5E20><b>Add</b></color>
+d -[#2E7D32]> d : <color:#1B5E20><b>onAdd()</b></color>
+d -[#BBBBBB]> ex : <color:#A8A8A8>addEndpoint(ns, template)</color>
+ex -[#BBBBBB]> ns : <color:#A8A8A8>addEndpoint(template)</color>
+ns --> d : endpoint (empty spec, SPEC-S01)
+note right of d : the tree shows the new endpoint;\nthe unmatched count stays (SPEC-U03)
+
+opt Clear in the panel
+    dev -[#2E7D32]> up : <color:#1B5E20><b>Clear</b></color>
+    up -[#2E7D32]> up : <color:#1B5E20><b>onClear()</b></color>
+    up -[#2E7D32]> ex : <color:#1B5E20><b>clearUnmatchedPaths(ns)</b></color>
+    ex -[#2E7D32]> ns : <color:#1B5E20><b>getUnmatchedPaths()</b></color>
+    ex -[#2E7D32]> um : <color:#1B5E20><b>clear()</b></color>
+end
+@enduml

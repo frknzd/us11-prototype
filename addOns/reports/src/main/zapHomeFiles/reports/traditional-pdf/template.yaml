@@ -1,0 +1,12 @@
+name: Traditional PDF Report
+format: PDF
+mode: HTML
+extension: pdf
+sections:
+ - alertcount
+ - insights
+ - scriptdiagnostics
+ - scriptdiagnosticsscreenshots
+ - scriptdiagnosticsoutput
+ - instancecount
+ - alertdetails

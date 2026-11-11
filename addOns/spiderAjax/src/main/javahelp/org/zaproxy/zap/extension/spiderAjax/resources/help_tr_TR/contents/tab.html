@@ -1,0 +1,225 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>AJAX Ağ sekmesi</title>
+</head>
+<body>
+	<h1>AJAX Örümcek sekmesi</h1>
+	<p>
+		AJAX Örümcek sekmesi <a href="concepts.html">AJAX Örümcek</a> tarafından bulunmuş bir dizi eşsiz URL'yi size gösterir.
+	</p>
+	<br /> Her istek için görebilecekleriniz:
+	<table>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>İstek indisi - Her istek 1'den başlayarak numaralandırılır</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>İstek zaman damgası</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>HTML yöntemi, örn. GET ya da POST</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>İstenen URL</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>HTTP yanıtı durum kodu</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>HTTP yanıt kodunun ne anlama geldiğinin kısa bir özeti</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>Tüm isteğin aldığı süre</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>Yanıt başlığının boyutu</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>Yanıt gövdesinin boyutu</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>İstek üzerindeki tüm <i>Uyarılar</i>
+			</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>İsteğe eklediğiniz tüm <i>Notlar</i>
+			</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>İsteğe eklediğiniz tüm <i>Etiketler</i>
+			</td>
+		</tr>
+	</table>
+
+	Seçilen sorgular şurada gösterilecek
+	<i>İstek sekmesi</i> ve
+	<i>Cevap sekmesi</i> yukarıda.
+	<br />
+
+	<h2>Sağ tık menüsü</h2>
+	<p>Right clicking on a node will bring up a menu which will allow you to:</p>
+
+	<h3>Saldırı</h3>
+	<p>The Attack menu has the following submenus:</p>
+
+	<h4>Aktif Tarama Sitesi</h4>
+	<p>
+		This will initiate an
+		<i>Active Scan</i> of the whole of the site containing the selected node.
+		<br /> The
+		<i>Active Scan tab</i> will be display and will show the progress of the scan.
+	</p>
+
+	<h4>Aktif Tarama Düğümü</h4>
+	<p>
+		This will initiate an
+		<i>Active Scan</i> of just the node selected.
+		<br /> The
+		<i>Active Scan tab</i> will be display and will show the progress of the scan.
+	</p>
+
+	<h4>Ağ Sitesi</h4>
+	<p>
+		This will initiate a
+		<i>spider</i> of the whole of the site containing the selected node.
+		<br /> The
+		<i>Spider tab</i> will be display and will show the progress of the scan.
+	</p>
+
+	<h4>Siteye zorla gözat</h4>
+	<p>
+		This will initiate a
+		<i>forced browse</i> of the whole of the site containing the selected node.
+		<br /> The
+		<i>Forced Browse tab</i> will be display and will show the progress of the scan.
+	</p>
+
+	<h4>Zorla Gözat Dizini</h4>
+	<p>
+		This will initiate a
+		<i>forced browse</i> on the selected directory.
+		<br /> The
+		<i>Forced Browse tab</i> will be displayed and will show the progress of the scan.
+	</p>
+
+	<h4>Zorla Göz At Dizini (ve çocuklar)</h4>
+	<p>
+		This will initiate a
+		<i>forced browse</i> on the selected directory and all children found.
+		<br /> The
+		<i>Forced Browse tab</i> will be displayed and will show the progress of the scan.
+	</p>
+
+	<h3>Şunun dışında bırak</h3>
+	<p>Bu menü aşağıdaki alt menülere sahiptir:</p>
+
+	<h4>Proxy</h4>
+	<p>
+		This will exclude the selected nodes from the proxy. They will still be proxied via ZAP
+		but will not be shown in any of the tabs.
+		<br /> This can be used to ignore URLs that you know are not relevant to the system you
+		are currently testing.
+		<br /> The nodes can be included again via the
+		<i>Session Properties</i> dialog
+	</p>
+
+	<h4>Tarayıcı</h4>
+	<p>
+		This will prevent the selected nodes from being actively scanned.
+		<br /> The nodes can be included again via the
+		<i>Session Properties</i> dialog
+	</p>
+
+	<h4>Örümcek</h4>
+	<p>
+		This will prevent the selected nodes from being spidered.
+		<br /> The nodes can be included again via the
+		<i>Session Properties</i> dialog
+	</p>
+
+	<h3>Uygulamayı çalıştır</h3>
+	<p>
+		This menu allows you to
+		<i>invoke applications</i> that you have configured via the
+		<i>Options Applications screen</i> which is also accessible via the 'Configure
+		applications...' submenu.
+	</p>
+
+	<h3>Etiketleri Yönet...</h3>
+	<p>
+		This will bring up the
+		<i>Manage Tags dialog</i> which allows you to change the
+		<i>tags</i> associated with the request.
+	</p>
+
+	<h3>Not olarak...</h3>
+	<p>
+		This will bring up the
+		<i>Add Note dialog</i> which allows you to record
+		<i>notes</i> related to the request.
+	</p>
+
+	<h3>Kırılma...</h3>
+	<p>
+		This will bring up the
+		<i>Add Break Point dialog</i> which allows you to set a break point on that URL.
+	</p>
+
+	<h3>Bu düğüm için uyarılar</h3>
+	<p>
+		If the URL selected has
+		<i>alerts</i> associated with it then they will be listed under this menu.
+		<br> Selecting one of the alerts will cause it to be displayed.
+	</p>
+
+	<h3>Tekrar gönder...</h3>
+	<p>
+		This will bring up the
+		<i>Resend dialog</i> which allows you to resend the request after making any changes to
+		it that you want to.
+	</p>
+
+	<h3>Yeni Uyarı...</h3>
+	<p>
+		This will bring up the
+		<i>Add Alert dialog</i> which allows you to manually record a new
+		<i>Alert</i> against this request.
+	</p>
+
+	<h3>Tarayıcıda URL Aç</h3>
+	<p>Bu, seçili düğümün URL'sini varsayılan tarayıcınızda açar.</p>
+
+	<h2>Ayrıca bakınız</h2>
+	<table>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td><a href="concepts.html">AJAX Ağ</a></td>
+			<td>AJAX Ağının genel bir görünümü için</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td><a href="options.html">AJAX Ağ Ekran Seçenekleri</a></td>
+			<td>AJAX Ağ Seçeneklerinin genel bir görünümü için</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td><a href="scandialog.html">AJAX Ağ penceresi</a></td>
+			<td>AJAX Ağ penceresinin genel bir görünümü için</td>
+		</tr>
+	</table>
+
+</body>
+</html>

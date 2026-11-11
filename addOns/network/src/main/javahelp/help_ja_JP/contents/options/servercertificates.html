@@ -1,0 +1,228 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<TITLE>サーバー証明書</TITLE>
+</HEAD>
+<BODY>
+	<H1>サーバー証明書</H1>
+
+	この画面では、ルートCA証明書と発行された証明書の管理と設定を行うことができます。
+
+	<p>
+	ZAPは、SSL接続を透過的に復号化することができます。そのためには、ZAPはサーバーへ送信する前に各リクエストを暗号化し、戻ってくる各レスポンスを復号する必要があります。しかし、これはすでにブラウザによって行われています。そのため、通信を復号または傍受する唯一の方法は、「中間者 (manipulator in the middle)」アプローチを採用することです。
+	</p>
+
+	<H2>概要</H2>
+	<p>
+		<img alt="中間者操作" src="../images/manipulatorinthemiddle.png">
+	</p>
+	<p>
+		簡単に言えば、サーバーとの間で送受信されるすべてのデータは、ZAP内で元のサーバーの証明書を使用して暗号化/復号されます。これにより、ZAPは平文を知ることができます。あなた (あなたのブラウザ) からSSL保護されたセッションを確立するために、ZAPは独自の証明書を使用します。これが、あなたが作成できる証明書です。
+		ZAPによって作成されるすべての証明書は、同じサーバー名に対して署名されます。上記の例では、ZAPはサーバー名<code>www.example.com</code>に対する証明書を作成します。これにより、あなたのブラウザは通常のSSL暗号化を行います。
+	</p>
+
+	<H2>ルートCA証明書</H2>
+	<p>
+		複数のSSL保護されたサイトを訪問していると想像してください。ブラウザがそのようなサイトに接続するたびに、新しいSSL証明書が作成されます。しかし、これらの証明書は誰からも信頼されていません (ZAPによって自己作成されたため)。言い換えれば、あなたのブラウザは最初からそのような証明書を受け入れません。ブラウザが証明書エラーを報告するが、そのサーバーに対して手動で例外ルールを作成できる状況に慣れているかもしれません。
+	</p>
+	<p>
+		ZAPによって作成されるすべての証明書は、「ZAP Root CA」証明書から直接的な信頼の連鎖にあります。（信頼の連鎖の詳細については、お気に入りの検索エンジンを使用してください ;-) ）
+これは、あなた(あなたのブラウザ)がZAP Root CAを一度だけ信頼すれば、それ以降の証明書は自動的に信頼されることを意味します。言い換えれば、ZAP Root CA証明書を信頼されたルートCAのリストに一度追加すれば、あなたのブラウザは中間者を認識しません。
+	</p>
+	<p>
+		<strong>注:</strong>
+		<blockquote>iOS 10.3以降では、ルート証明書に対する完全な信頼も有効にする必要があります:
+設定 > 一般 > 情報 > 証明書信頼設定に移動します。「ルート証明書の完全信頼を有効にする」の下で、証明書の信頼をオンにします。</blockquote>
+
+	<h3>生成</h3>
+	<p>
+		ZAPを初めて実行すると、あなた専用のルートCA証明書が生成されます。「ブラウザ起動」機能を使用しない場合は、ブラウザまたはHTTPクライアントアプリケーション内にインストールする必要があります。詳細については、<a href="#install">インストール</a>セクションを参照してください。
+	</p>
+	<p>
+		生成されたルートCA証明書は、デフォルトで1年間有効です。その期間後、新しいものを作成する必要があります。<br>
+生成されるすべてのルートCA証明書は2048ビット強度 (RSA with SHA1) です。<br>
+生成されるすべてのルートCA証明書はシリアル番号「1」で始まります。生成されるすべてのルートCA証明書は、以下の識別子で構成されます：
+	</p>
+	<p style="padding-left: 20pt;">
+		<code>
+		CN = Zed Attack Proxy Root CA<br>
+L = 87b77fe834b0a301<br>
+O = ZAP Root CA<br>
+OU = ZAP Root CA<br>
+C = XX<br>
+		</code>
+	</p>
+	<p>
+		ご覧のとおり、Location識別子 (L) があり、これは単なる16進数です。この番号は、ユーザー名とユーザーのホームディレクトリという2つの32ビットハッシュコードから構成されています。これにより、複数のインストールを使用している場合に、自分自身の証明書を識別できます。しかし、このハッシュコードから誰かがあなたの名前を把握することはできません。
+	</p>
+
+	<h3>インポート</h3>
+	<p>
+		複数のZAPインストールを使用していて、同じルートCA証明書を使用したい場合は、インポートできます。単にZAPの1つのインストールを使用して1つのルートCA証明書を生成してください。<br>
+ZAPのホームディレクトリから「config.xml」ファイルを、同じ証明書を使用したいPCにコピーし、「インポート」を押してインポートします。
+	</p>
+	<p>
+		または、<a href="../cmdline.html">コマンドライン</a>オプションを使用できます：
+		<ul>
+		<li>-certfulldump &lt;path&gt; - 1つのZAPインスタンスから証明書をダンプする
+		<li>-certload <br> - 別のZAPインスタンスに証明書をロードする
+		</ul>
+	<p>
+		証明書と暗号化されていない秘密鍵の両方が以下の形式で含まれている限り、PEMファイルに保存された証明書をインポートすることもできます：<br>
+<code><br>
+	-----BEGIN CERTIFICATE-----<br>
+	MIIC9TCCAl6gAwIBAgIJANL8E4epRNznMA0GCSqGSIb3DQEBBQUAMFsxGDAWBgNV<br>
+	BAoTD1N1cGVyZmlzaCwgSW5jLjELMAkGA1UEBxMCU0YxCzAJBgNVBAgTAkNBMQsw<br>
+	CQYDVQQGEwJVUzEYMBYGA1UEAxMPU3VwZXJmaXNoLCBJbmMuMB4XDTE0MDUxMjE2<br>
+	MjUyNloXDTM0MDUwNzE2MjUyNlowWzEYMBYGA1UEChMPU3VwZXJmaXNoLCBJbmMu<br>
+	MQswCQYDVQQHEwJTRjELMAkGA1UECBMCQ0ExCzAJBgNVBAYTAlVTMRgwFgYDVQQD<br>
+	Ew9TdXBlcmZpc2gsIEluYy4wgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAOjz<br>
+	Shh2Xxk/sc9Y6X9DBwmVgDXFD/5xMSeBmRImIKXfj2r8QlU57gk4idngNsSsAYJb<br>
+	1Tnm+Y8HiN/+7vahFM6pdEXY/fAXVyqC4XouEpNarIrXFWPRt5tVgA9YvBxJ7SBi<br>
+	3bZMpTrrHD2g/3pxptMQeDOuS8Ic/ZJKocPnQaQtAgMBAAGjgcAwgb0wDAYDVR0T<br>
+	BAUwAwEB/zAdBgNVHQ4EFgQU+5izU38URC7o7tUJml4OVoaoNYgwgY0GA1UdIwSB<br>
+	hTCBgoAU+5izU38URC7o7tUJml4OVoaoNYihX6RdMFsxGDAWBgNVBAoTD1N1cGVy<br>
+	ZmlzaCwgSW5jLjELMAkGA1UEBxMCU0YxCzAJBgNVBAgTAkNBMQswCQYDVQQGEwJV<br>
+	UzEYMBYGA1UEAxMPU3VwZXJmaXNoLCBJbmMuggkA0vwTh6lE3OcwDQYJKoZIhvcN<br>
+	AQEFBQADgYEApHyg7ApKx3DEcWjzOyLi3JyN0JL+c35yK1VEmxu0Qusfr76645Oj<br>
+	1IsYwpTws6a9ZTRMzST4GQvFFQra81eLqYbPbMPuhC+FCxkUF5i0DNSWi+kczJXJ<br>
+	TtCqSwGl9t9JEoFqvtW+znZ9TqyLiOMw7TGEUI+88VAqW0qmXnwPcfo=<br>
+	-----END CERTIFICATE-----<br>
+	-----BEGIN PRIVATE KEY-----<br>
+	MIICXgIBAAKBgQDo80oYdl8ZP7HPWOl/QwcJlYA1xQ/+cTEngZkSJiCl349q/EJV<br>
+	Oe4JOInZ4DbErAGCW9U55vmPB4jf/u72oRTOqXRF2P3wF1cqguF6LhKTWqyK1xVj<br>
+	0bebVYAPWLwcSe0gYt22TKU66xw9oP96cabTEHgzrkvCHP2SSqHD50GkLQIDAQAB<br>
+	AoGBAKepW14J7F5e0ppa8wvOcUU7neCVafKHA4rcoxBF8t+P7UhiMVfn7uQiFk2D<br>
+	K8gXyKpLcEdRb7K7CI+3i8RkoXTRDEZU5XPMJnZsE5LWgNQ+pi3HwMEdR0vD2Iyv<br>
+	vIH3tq6mNKgDu+vozm8DWsEP96jrhVbo1U1rzyEtX46afo79AkEA/VXanGaqj4ua<br>
+	EsqfY6n/7+MTm4iPOM7qfoyI4EppJXZklc/FbcV2lAjY2Jl9U6X7WnqCPn+/zg44<br>
+	6lKWTnhAawJBAOtmi6nw8WjY6uyXZosE/0r4SkSSo20EJbBCJcgdofKT+VCGB4hp<br>
+	h6XwGdls0ca+qa5ZE1a196dpwwVre0hm88cCQQDrUm3QbHmw/39uRzOJs6dfYPKc<br>
+	vlwz69jdFpQqrFRBjVlf4/FDx3IfjpxHj0RgiEUUxcnoXmh/8qwh1fdzCrbjAkB4<br>
+	afg/chTLQUrKw5ecvW2p9+Blu20Fsv1kcDHLb/0LjU4XNrhbuz+8TlmqstOMCrPZ<br>
+	j48o5+RLKvqrpxNlMeS5AkEA6qIdW/yp5N8b1j2OxYZ9u5O//BvspwRITGM60Cps<br>
+	yemZE/ua8wm34SKvDHf5uxcmofShW17PLICrsLJ7P35y/A== <br>
+	-----END PRIVATE KEY-----<br>
+</code><br>
+そして、はい、この例は機能します - これは Superfish の証明書です!
+	</p>
+
+	<h3><a name="view">表示</a></h3>
+	<p>
+		ZAPのオプションダイアログでは、PEM形式の証明書が表示されます。「表示」オプションは、システムのデフォルトの「.CER」ファイル表示ツールを使用しようとします。 Windowsでは、これは通常、証明書をエクスポートしてダブルクリックするのと同じです。
+	</p>
+
+	<h3><a name="save">保存</a></h3>
+	<p>
+		ZAPのオプションダイアログでは、証明書の生バイト (16進数エンコード) が表示されます。多くのプログラムは、インポート/エクスポート機能にこのシンプルな形式を使用しています。「保存」をクリックすると、これらのバイトがディスクに保存されます。これは、すべてを選択してCTRL+C (クリップボードにコピー) を実行し、新しい.CERファイル (ダイアログに表示されているような単純なテキスト) に保存するのと同じです。
+	</p>
+
+	<h2><a name="issued_certificates">発行済み証明書</a></h2>
+	<p>
+		各ZAPインスタンスは独自のルート証明書を使用しています。もちろん、複数のマシンで使用するためにルート証明書をインポートできます。実行中、HTTPSリソースが要求されるたびに、サブ証明書が作成されます。つまり、ルートCA証明書が発行者として使用されます。
+	</p>
+	<p>
+		発行される証明書は、デフォルトで368日間有効です。<br>
+発行される証明書は2048ビット強度 (RSA with SHA1) です。<br>
+発行される証明書はランダムなシリアル番号を持ちます。発行される証明書は、以下の識別子で構成されます：
+	</p>
+	<p style="padding-left: 20pt;">
+		<code>
+		CN = www.example.com<br>
+E = zaproxy-develop@googlegroups.com<br>
+C = XX<br>
+O = ZAP<br>
+OU = Zed Attack Proxy Project<br>
+		</code>
+	</p>
+	<p>
+		<i>
+補足:
+ZAPを起動するたびに、内部的にランダムなシリアル番号オフセットが生成されます。発行される証明書は、このオフセットに増加するカウンターを加えたものを使用します。たとえば、最初に発行される証明書はシリアル番号2314、2番目は2315、3番目は2316というようになります。これの理由は単純です: ブラウザも証明書をキャッシュしています。
+			ZAPを再起動してもブラウザを再起動しない場合、ブラウザが同じ証明書を異なるシリアル番号で見る可能性があります。結局、ブラウザはそれについて文句を言い、証明書を拒否するでしょう。ランダムオフセット (内部的には48ビットの乱数) を使用することで、ZAPを再起動したときにシリアル番号オフセットが異なる確率は281,474,976,710,656分の1になります。<br>
+したがって、まれに証明書内の壊れたシリアル番号についてブラウザが文句を言うことを発見した場合は、ブラウザを再起動してください ;-)
+</i>
+	</p>
+
+	<h3>CRL配布ポイント</h3>
+	<p>
+		場合によっては、有効な証明書があるだけでは、動作するTLS MITMには不十分です。たとえば、Windowsの<code>libcurl</code>は、バックエンドとして<code>schannel</code>を使用しており、デフォルトでは証明書に有効な証明書失効リスト配布ポイントが提供されているかどうかをチェックし、このCRLに接続して取得しようとします。運が良ければ、バイナリは詳細で、エラーメッセージは十分に明確です：
+	</p>
+
+	<p style="padding-left: 20pt;">
+		<code>
+			PS C:\Users\alice> curl.exe https://ifconfig.me/<br>
+			curl: (35) schannel: next InitializeSecurityContext failed: Unknown error (0x80092012) - The revocation function was unable to check revocation for the certificate.<br>
+		</code>
+	</p>
+	<p>
+		これは、ネットワークレベルでTLSハンドシェイク失敗として現れることもあります：
+	</p>
+
+	<p style="padding-left: 20pt;">
+		<code>
+			6    0.023470    192.168.56.104    1.2.3.4    TLSv1.2    273    Client Hello<br>
+8    0.033465    1.2.3.4    192.168.56.104    TLSv1.2    144    Server Hello<br>
+11    0.033875    1.2.3.4    192.168.56.104    TLSv1.2    527    Certificate<br>
+13    0.084581    1.2.3.4    192.168.56.104    TLSv1.2    401    Server Key Exchange, Server Hello Done<br>
+16    0.158961    1.2.3.4    192.168.56.104    TLSv1.2    61    Alert (Level: Fatal, Description: Handshake Failure)<br>
+		</code>
+	</p>
+	<p>
+		このオプションを使用すると、生成される各証明書に追加されるCRL配布ポイントを指定できます。明らかに、カスタムルート証明書機関を作成する必要があります。たとえば、<a href="https://github.com/kaysond/spki">https://github.com/kaysond/spki</a>を使用します。これは、小規模展開に適したシンプルなPKIを生成および管理するOpenSSLのラッパーで、CRLとOCSPをサポートし、たとえば小さなHTTPサーバーを使用して、被害者クライアントがCRLを利用できるようにします。
+	</p>
+
+	<h2><a name="install">ZAP Root CA証明書のインストール</a></h2>
+	<p>
+		使用したいすべてのHTTPSクライアントは、ZAP Root CA証明書を「信頼されたルート証明書」として認識する必要があります。通常、ZAP証明書をブラウザの信頼されたルート証明書のリストに手動でインストールする必要があります。
+	</p>
+	<h3>Windows / Internet Explorer</h3>
+	<p>
+		最も簡単な方法は、<a href="#view">表示</a>をクリックして「証明書のインストール」を選択することです。または、生成した証明書を<a href="#save">保存</a>して、.CERファイルをダブルクリックすることもできます。そうすると、証明書インストール支援のための通常のWindowsウィザードがポップアップ表示されます。このウィザードで、証明書ストアを手動で選択してください。 Windowsに証明書ストアを自動的に選択させないでください。ストアとして「信頼されたルート証明書」を選択し、ウィザードを完了します。
+		<br>
+保存したファイルをコピーして、必要に応じて他のコンピューターにインストールすることもできます。
+	</p>
+	<p>
+		インストールが正常に完了したら、証明書を確認できます。
+	</p>
+		<ol>
+		<li>インターネットオプションに移動</li>
+		<li>コンテンツタブ</li>
+		<li>証明書をクリック</li>
+		<li>信頼されたルート証明書タブをクリック</li>
+		<li>ZAP Root CAがそこにあるはずです</li>
+		</ol>
+
+	<h3>Mozilla Firefox</h3>
+	<p>
+		Firefoxは独自の証明書ストアを使用しています。そのため、Windowsで両方のブラウザを使用している場合は、2回インポートする必要があります。インストールとその後の検証は、同じ環境設定ダイアログで行われます：
+	</p>
+		<ol>
+		<li>環境設定に移動</li>
+		<li>詳細タブ</li>
+		<li>暗号化/証明書タブ</li>
+		<li>証明書を表示をクリック</li>
+		<li>認証局タブをクリック</li>
+		<li>インポートをクリックして、<a href="#save">保存した</a><tt>zap_root_ca.cer</tt>ファイルを選択</li>
+		<li>ウィザードで、この証明書をWebサイトの識別に信頼することを選択 (ボックスにチェック)</li>
+		<li>ウィザードを完了</li>
+		</ol>
+
+	<H2 style="color: red; font-weight: bold; text-decoration: underline;">リスク</H2>
+	<p>
+		<b>注意、リスクがあります！</b><br>
+自己生成されたルートCA証明書を信頼されたルート証明書のリストに追加すると、そのルート証明書を持つ誰もがあなたのシステム (ブラウザ) にデータを密輸できます。言い換えれば、安全な環境ではなく本番マシンでテストしている場合は、システムに追加の攻撃ベクトルを開いていることに注意してください。
+	</p>
+
+	<H2>関連情報</H2>
+	<table>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td><a href="../network.html">ネットワーク</a></td>
+			<td>ネットワークアドオンの概要</td>
+		</tr>
+	</table>
+
+</BODY>
+</HTML>

@@ -1,0 +1,332 @@
+/*
+ * Zed Attack Proxy (ZAP) and its related class files.
+ *
+ * ZAP is an HTTP/HTTPS proxy for assessing web application security.
+ *
+ * Copyright 2013 The ZAP Development Team
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.zaproxy.zap.extension.zest;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import javax.script.ScriptException;
+import org.parosproxy.paros.control.Control;
+import org.zaproxy.addon.network.ExtensionNetwork;
+import org.zaproxy.addon.pscan.ExtensionPassiveScan2;
+import org.zaproxy.zap.authentication.ScriptBasedAuthenticationMethodType;
+import org.zaproxy.zap.extension.ascan.ExtensionActiveScan;
+import org.zaproxy.zap.extension.script.ExtensionScript;
+import org.zaproxy.zap.extension.script.ScriptWrapper;
+import org.zaproxy.zap.extension.scripts.ExtensionScriptsUI;
+import org.zaproxy.zap.extension.scripts.diagnostics.ScriptDiagnosticSource;
+import org.zaproxy.zap.extension.scripts.diagnostics.ScriptDiagnosticSource.RunDiagnostics;
+import org.zaproxy.zap.extension.scripts.diagnostics.ScriptDiagnosticSource.RunFailureDiagnostic;
+import org.zaproxy.zap.extension.scripts.diagnostics.ScriptDiagnosticSource.RunOutput;
+import org.zaproxy.zap.extension.zest.internal.ZestScriptMerger;
+import org.zaproxy.zap.users.User;
+import org.zaproxy.zest.core.v1.ZestScript;
+import org.zaproxy.zest.core.v1.ZestScript.Type;
+
+public class ZestScriptWrapper extends ScriptWrapper implements ScriptDiagnosticSource {
+
+    public static final String ZAP_BREAK_VARIABLE_NAME = "zap.break";
+    public static final String ZAP_BREAK_VARIABLE_VALUE = "set";
+
+    private boolean incStatusCodeAssertion = true;
+    private boolean incLengthAssertion = true;
+    private int lengthApprox = 1;
+    private ZestScript zestScript = null;
+    private ExtensionZest extension = null;
+    private ExtensionNetwork extensionNetwork;
+    private ScriptWrapper original = null;
+    private boolean debug = false;
+    private boolean recording = false;
+    private int zestModCount;
+    private User user;
+    private ZestScriptMerger.ChainProvenance chainProvenance;
+
+    /** Run diagnostics; cleared at run start and not copied by {@link #clone()}. */
+    private final RunDiagnosticsHolder runDiagnostics = new RunDiagnosticsHolder();
+
+    private static final class RunDiagnosticsHolder {
+        private RunFailureDiagnostic failure;
+        private final List<RunOutput> outputs = new ArrayList<>();
+        private int outputOrdinal;
+
+        void setFailure(RunFailureDiagnostic diagnostic) {
+            failure = diagnostic;
+        }
+
+        void appendOutput(
+                String scriptName, int sourceStatementIndex, String elementType, String message) {
+            outputs.add(
+                    new RunOutput(
+                            scriptName,
+                            sourceStatementIndex,
+                            outputOrdinal++,
+                            elementType,
+                            message));
+        }
+
+        void clear() {
+            failure = null;
+            outputs.clear();
+            outputOrdinal = 0;
+        }
+
+        RunDiagnostics snapshot() {
+            return new RunDiagnostics(Optional.ofNullable(failure), List.copyOf(outputs));
+        }
+    }
+
+    public ZestScriptWrapper(ScriptWrapper script) {
+        this.original = script;
+        zestScript = (ZestScript) getExtension().convertStringToElement(script.getContents());
+        if (zestScript == null) {
+            // new script
+            zestScript = new ZestScript();
+            Type ztype;
+            switch (script.getType().getName()) {
+                case ExtensionActiveScan.SCRIPT_TYPE_ACTIVE:
+                case "sequence": // ExtensionSequence.TYPE_SEQUENCE
+                    ztype = Type.Active;
+                    break;
+                case ExtensionPassiveScan2.SCRIPT_TYPE_PASSIVE:
+                    ztype = Type.Passive;
+                    break;
+                case ExtensionScriptsUI.TYPE_TARGETED:
+                case ExtensionScriptsUI.TYPE_PROXY:
+                    ztype = Type.Targeted;
+                    break;
+                case ExtensionScript.TYPE_STANDALONE:
+                case ScriptBasedAuthenticationMethodType.SCRIPT_TYPE_AUTH:
+                default:
+                    ztype = Type.StandAlone;
+                    break;
+            }
+            zestScript.setType(ztype);
+            zestScript.setDescription(script.getDescription());
+        }
+        // Override the title in case its taken from a template
+        zestScript.setTitle(script.getName());
+
+        this.setName(script.getName());
+        this.setDescription(script.getDescription());
+        this.setEngine(script.getEngine());
+        this.setEngineName(script.getEngineName());
+        this.setType(script.getType());
+        this.setEnabled(script.isEnabled());
+        this.setFile(script.getFile());
+        this.setLoadOnStart(script.isLoadOnStart());
+        this.setChanged(script.isChanged());
+        this.setWriter(script.getWriter());
+    }
+
+    public boolean isIncStatusCodeAssertion() {
+        return incStatusCodeAssertion;
+    }
+
+    public void setIncStatusCodeAssertion(boolean incStatusCodeAssertion) {
+        this.incStatusCodeAssertion = incStatusCodeAssertion;
+    }
+
+    public boolean isIncLengthAssertion() {
+        return incLengthAssertion;
+    }
+
+    public void setIncLengthAssertion(boolean incLengthAssertion) {
+        this.incLengthAssertion = incLengthAssertion;
+    }
+
+    public int getLengthApprox() {
+        return lengthApprox;
+    }
+
+    public void setLengthApprox(int lengthApprox) {
+        this.lengthApprox = lengthApprox;
+    }
+
+    public ZestScript getZestScript() {
+        return zestScript;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T getInterface(Class<T> class1) throws ScriptException, IOException {
+        // Clone the wrapper so that we get a new instance every time
+        if (class1.isAssignableFrom(ZestPassiveRunner.class)) {
+            return (T)
+                    new ZestPassiveRunner(this.getExtension(), getExtensionNetwork(), this.clone());
+
+        } else if (class1.isAssignableFrom(ZestActiveRunner.class)) {
+            return (T)
+                    new ZestActiveRunner(this.getExtension(), getExtensionNetwork(), this.clone());
+
+        } else if (class1.isAssignableFrom(ZestTargetedRunner.class)) {
+            return (T)
+                    new ZestTargetedRunner(
+                            this.getExtension(), getExtensionNetwork(), this.clone());
+
+        } else if (class1.isAssignableFrom(ZestHttpSenderRunner.class)) {
+            return (T)
+                    new ZestHttpSenderRunner(
+                            this.getExtension(), getExtensionNetwork(), this.clone());
+
+        } else if (class1.isAssignableFrom(ZestProxyRunner.class)) {
+            return (T)
+                    new ZestProxyRunner(this.getExtension(), getExtensionNetwork(), this.clone());
+
+        } else if (class1.isAssignableFrom(ZestAuthenticationRunner.class)) {
+            return (T)
+                    new ZestAuthenticationRunner(
+                            this.getExtension(), getExtensionNetwork(), this.clone());
+        } else if (class1.isAssignableFrom(ZestSequenceRunner.class)) {
+            return (T)
+                    new ZestSequenceRunner(
+                            this.getExtension(), getExtensionNetwork(), this.clone());
+        }
+        return null;
+    }
+
+    private ExtensionZest getExtension() {
+        if (extension == null) {
+            extension =
+                    (ExtensionZest)
+                            Control.getSingleton()
+                                    .getExtensionLoader()
+                                    .getExtension(ExtensionZest.NAME);
+        }
+        return extension;
+    }
+
+    private ExtensionNetwork getExtensionNetwork() {
+        if (extensionNetwork == null) {
+            extensionNetwork =
+                    Control.getSingleton()
+                            .getExtensionLoader()
+                            .getExtension(ExtensionNetwork.class);
+        }
+        return extensionNetwork;
+    }
+
+    @Override
+    protected ZestScriptWrapper clone() {
+        this.original.setContents(this.getContents());
+        ZestScriptWrapper clone = new ZestScriptWrapper(this.original);
+        clone.setWriter(this.getWriter());
+        clone.setDebug(this.isDebug());
+        clone.setRecording(this.isRecording());
+        clone.setUser(this.getUser());
+        clone.setChainProvenance(this.chainProvenance);
+        return clone;
+    }
+
+    @Override
+    public String getContents() {
+        return getExtension().convertElementToString(this.zestScript);
+    }
+
+    @Override
+    public void setContents(String script) {
+        incModCount();
+    }
+
+    void incModCount() {
+        zestModCount++;
+    }
+
+    @Override
+    public int getModCount() {
+        return zestModCount;
+    }
+
+    @Override
+    public int hashCode() {
+        return original.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object script) {
+        return super.equals(script) || this.original.equals(script);
+    }
+
+    public boolean isDebug() {
+        return debug;
+    }
+
+    public void setDebug(boolean debug) {
+        this.debug = debug;
+    }
+
+    public boolean isRecording() {
+        return recording;
+    }
+
+    public void setRecording(boolean recording) {
+        this.recording = recording;
+    }
+
+    @Override
+    public boolean isRunnableStandalone() {
+        // We can always prompt for parameters :)
+        return true;
+    }
+
+    ScriptWrapper getOriginal() {
+        return original;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    /**
+     * Provenance for a chain script (see {@link ZestScriptMerger.ChainProvenance}), or {@link
+     * Optional#empty()} for ordinary scripts.
+     */
+    public Optional<ZestScriptMerger.ChainProvenance> getChainProvenance() {
+        return Optional.ofNullable(chainProvenance);
+    }
+
+    public void setChainProvenance(ZestScriptMerger.ChainProvenance chainProvenance) {
+        this.chainProvenance = chainProvenance;
+    }
+
+    /** Replaces any prior failure diagnostics for this wrapper. {@code null} clears them. */
+    public void setLastRunFailure(RunFailureDiagnostic diagnostic) {
+        runDiagnostics.setFailure(diagnostic);
+    }
+
+    @Override
+    public RunDiagnostics getRunDiagnostics() {
+        return runDiagnostics.snapshot();
+    }
+
+    @Override
+    public void clearRunDiagnostics() {
+        runDiagnostics.clear();
+    }
+
+    void appendRunOutput(
+            String scriptName, int sourceStatementIndex, String elementType, String message) {
+        runDiagnostics.appendOutput(scriptName, sourceStatementIndex, elementType, message);
+    }
+}

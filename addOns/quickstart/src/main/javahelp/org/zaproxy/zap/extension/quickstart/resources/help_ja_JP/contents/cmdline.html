@@ -1,0 +1,53 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>コマンドライン</title>
+</head>
+<body>
+	<h1>コマンドライン</h1>
+	クイックスタートアドオンは、次のコマンドラインオプションをサポートしています：
+	<table>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>-quickurl</td>
+			<td>攻撃対象のURLを指定します。</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>-quickout</td>
+			<td>レポートを書き込むファイルを指定します。レポートのフォーマットはファイル拡張子によって決まります。サポートされているファイル拡張子は、 
+			<pre>.html</pre>, <pre>.json</pre>, <pre>.md</pre>, <pre>.xml</pre>です。これらの拡張子がいずれも使用されない場合、フォーマットはXMLになります。「インライン」モードおよびデーモンモードで設定されていない場合、レポートはデフォルトの出力ストリームに書き込まれます。</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>-quickprogress</td>
+			<td>-cmd フラグを付けて起動された場合、ASCIIプログレスバーを表示します。</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>-zapit</td>
+			<td>指定されたURLに対してクイック「<a href="zapit.html">ZAPit</a>」偵察 (reconnaissance) スキャンを実行します。-cmd フラグも設定されている必要があります。</td>
+		</tr>
+	</table>
+
+	<br>
+	<p>例:
+	<ul>
+		<li>ZAPを「インライン」モードでASCIIプログレスバー付きで起動し、ターゲットアプリケーション http://example.com/ を攻撃し、レポートをデフォルトの出力ストリームに書き込みます： <pre>-cmd -quickurl http://example.com/ -quickprogress</pre>
+		</li>
+		<li>ZAPをUI付きで起動し、ターゲットアプリケーション http://example.com/ を攻撃し、レポートをファイルに保存します： <pre>-quickurl http://example.com/ -quickout /path/to/report.xml</pre>
+		</li>
+	</ul>
+
+	<h2>関連情報</h2>
+	<table>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td><a href="quickstart.html">クイックスタート</a></td>
+			<td>クイックスタートの概要</td>
+		</tr>
+	</table>
+
+</body>
+</html>

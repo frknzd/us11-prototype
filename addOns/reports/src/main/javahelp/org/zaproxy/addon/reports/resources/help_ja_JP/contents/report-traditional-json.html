@@ -1,0 +1,148 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<TITLE>従来の JSON レポート</TITLE>
+</HEAD>
+<BODY>
+	<H1>従来の JSON レポート</H1>
+
+	<H3>Sections</H3>
+
+	<table>
+		<tr>
+			<th align="left">Section</th>
+			<th align="left">ID</th>
+		</tr>
+		<tr>
+			<td>Script Diagnostics</td>
+			<td>scriptdiagnostics</td>
+		</tr>
+		<tr>
+			<td>Screenshots for Script Diagnostics</td>
+			<td>scriptdiagnosticsscreenshots</td>
+		</tr>
+		<tr>
+			<td>Output for Script Diagnostics</td>
+			<td>scriptdiagnosticsoutput</td>
+		</tr>
+	</table>
+
+	<H3>サンプル</H3>
+
+	<pre>
+{
+    "@version": "Dev Build",
+    "@generated": "Fri, 4 Feb 2022 13:04:51",
+    "created": "2022-02-04T13:04:51.236211400Z",
+	"insights":[
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://localhost:8080",
+			"key": "insight.code.2xx",
+			"description": "Percentage of responses with status code 2xx",
+			"statistic": "95"
+		}, ...
+	],
+    "site":[
+        {
+            "@name": "http://localhost:8080",
+            "@host": "localhost",
+            "@port": "8080",
+            "@ssl": "false",
+            "alerts": [
+                {
+                    "pluginid": "40012",
+                    "alertRef": "40012",
+                    "alert": "Cross Site Scripting (Reflected)",
+                    "name": "Cross Site Scripting (Reflected)",
+                    "riskcode": "3",
+                    "confidence": "2",
+                    "riskdesc": "High (Medium)",
+                    "desc": "&lt;p&gt;Cross-site Scripting (XSS) is an attack technique that involves ...&lt;/p&gt;",
+                    "instances":[
+                        {
+                            "uri": "http://localhost:8080/bodgeit/search.jsp?q=%3C%2Ffont%3E%3CscrIpt%3Ealert%281%29%3B%3C%2FscRipt%3E%3Cfont%3E",
+                            "nodeName": "http://localhost:8080/bodgeit/search.jsp (q)",
+                            "method": "GET",
+                            "param": "q",
+                            "attack": "&lt;/font&gt;&lt;scrIpt&gt;alert(1);&lt;/scRipt&gt;&lt;font&gt;",
+                            "evidence": "&lt;/font&gt;&lt;scrIpt&gt;alert(1);&lt;/scRipt&gt;&lt;font&gt;",
+                            "otherinfo": ""
+                        },
+                        {
+                            "uri": "http://localhost:8080/bodgeit/contact.jsp",
+                            "nodeName": "http://localhost:8080/bodgeit/contact.jsp",
+                            "method": "POST",
+                            "param": "comments",
+                            "attack": "&lt;/td&gt;&lt;scrIpt&gt;alert(1);&lt;/scRipt&gt;&lt;td&gt;",
+                            "evidence": "&lt;/td&gt;&lt;scrIpt&gt;alert(1);&lt;/scRipt&gt;&lt;td&gt;",
+                            "otherinfo": ""
+                        }
+                    ],                   
+                    "count": "2", 
+                    "systemic": false, 
+                    "solution": "&lt;p&gt;Phase: Architecture and Design&lt;/p&gt;&lt;p&gt;Use a vetted library or framework that does not ...&lt;/p&gt;",
+                    "otherinfo": "",
+                    "reference": "&lt;p&gt;http://projects.webappsec.org/Cross-Site-Scripting&lt;/p&gt;&lt;p&gt;http://cwe.mitre.org/data/definitions/79.html&lt;/p&gt;",
+                    "cweid": "79",
+                    "wascid": "8",
+                    "sourceid": "36977"
+                },
+
+</pre>
+
+	<h4>Sequence Details Section</h4>
+	レポートはシーケンスと関連するアクティブスキャン結果の詳細も含めることができます。例えば：
+
+	<pre>
+    "sequences": [
+      {
+        "name": "Seq name",
+        "steps": [
+          {
+            "step": "1",
+            "pass": "true",
+            "resultDetails": "Pass",
+            "alertIds": [],
+            "original": {
+              "uri": "https://www.example.com/step1",
+              "method": "GET"
+            },
+            "replay": {
+              "uri": "https://www.example.com/step1",
+              "method": "GET"
+            }
+          },
+          {
+            "step": "2",
+            "pass": "false",
+            "resultDetails": "Fail",
+            "alertIds": [
+              2,
+              4
+            ],
+            "original": {
+              "uri": "https://www.example.com/step2",
+              "method": "GET"
+            },
+            "replay": {
+              "uri": "https://www.example.com/step2",
+              "method": "GET"
+            }
+          }
+        ]
+      }
+    ]
+</pre>
+
+	<H3>Script Diagnostics</H3>
+	Section descriptions are documented in
+	<a href="report-traditional-script-diagnostics.html">Script
+		Diagnostics in Traditional Reports</a> . See
+	<a href="report-traditional-json-plus.html">Traditional JSON Report
+		with Requests and Responses</a> for structured examples.
+
+</BODY>
+</HTML>
+

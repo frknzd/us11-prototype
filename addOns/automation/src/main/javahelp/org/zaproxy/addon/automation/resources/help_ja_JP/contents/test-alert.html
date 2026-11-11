@@ -1,0 +1,44 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+  <TITLE>
+    自動化フレームワーク - アラートジョブテスト
+  </TITLE>
+</HEAD>
+<BODY>
+<H1>自動化フレームワーク - アラートジョブテスト</H1>
+
+アラートテストは、activeScan および passiveScan-wait ジョブでサポートされています。これらのテストは、アクティブスキャンまたはパッシブスキャンで特定のアラートが存在するかどうか、または存在しないかを検証するために使用できます。プランで指定するアラートには、scanRuleId を含めることが必須です。生成されたアラートは、常にこのIDと照合されます。アラートを記述するその他すべてのフィールドは任意の正規表現として機能し、指定された場合にのみマッチングが行われます。
+<p>
+1つのジョブには複数のアラートテストを含めることができ、同じ scanRuleId を持つアラートに対しても複数のテストを作成できます。
+
+<H2>YAML</H2>
+
+<pre>
+  jobs:
+  - type: activeScan                   # アクティブスキャナー - ターゲットを積極的に攻撃するため、必ず許可を得てから使用してください
+    parameters:
+      context:                         # 文字列: 攻撃するコンテキストの名前、デフォルト: 最初のコンテキスト
+      policy:                          # 文字列: 使用するスキャンポリシーの名前、デフォルト: Default Policy
+      maxRuleDurationInMins:           # Int: 個々のルールが実行を許可される最大時間 (分)、デフォルト: 0 (制限なし)
+      maxScanDurationInMins:           # Int: アクティブスキャナーが実行を許可される最大時間 (分)、デフォルト: 0 (制限なし)
+    tests:
+      - name: 'test one'                       #  テストの名前、任意
+        type: alert                            # テストが「alert」タイプであることを指定します
+        action: passIfPresent/passIfAbsent     #  文字列: アラートの条件 (存在/非存在)、デフォルト: passIfAbsent
+        scanRuleId:                            # 整数: アラートを生成する scanRule のID、必須
+        alertName:                             # 文字列: 生成されたアラートの名前、任意
+        url: http://www.example.com/path       # 文字列: 生成されたアラートに対応するリクエストのURL、任意
+        method:                                # 文字列: 生成されたアラートに対応するリクエストのメソッド、任意
+        attack:                                # 文字列: アラートを生成した実際の攻撃、任意
+        param:                                 # 文字列: アラートを生成するために変更されたパラメータ、任意
+        evidence:                              # 文字列: 生成されたアラートに対応する証拠、任意
+        confidence:                            # 文字列: アラートの信頼度、'False Positive'、'Low'、'Medium'、'High'、'Confirmed' のいずれか、任意
+        risk:                                  # 文字列: アラートのリスクレベル、'Informational'、'Low'、'Medium'、'High' のいずれか、任意
+        otherInfo:                             # 文字列: アラートに対応する追加情報、任意
+        onFail: 'info'                         # 文字列: 'warn'、'error'、'info' のいずれか、必須
+  
+</pre>
+</BODY>
+</HTML>
+

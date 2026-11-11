@@ -1,0 +1,893 @@
+/*
+ * Zed Attack Proxy (ZAP) and its related class files.
+ *
+ * ZAP is an HTTP/HTTPS proxy for assessing web application security.
+ *
+ * Copyright 2025 The ZAP Development Team
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.zaproxy.addon.authhelper;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Supplier;
+import javax.jdo.PersistenceManager;
+import javax.jdo.Transaction;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.ScriptKey;
+import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebDriverException;
+import org.openqa.selenium.WebElement;
+import org.parosproxy.paros.Constant;
+import org.parosproxy.paros.db.DatabaseException;
+import org.parosproxy.paros.model.HistoryReference;
+import org.parosproxy.paros.model.Model;
+import org.parosproxy.paros.network.HttpHeader;
+import org.parosproxy.paros.network.HttpMalformedHeaderException;
+import org.parosproxy.paros.network.HttpMessage;
+import org.parosproxy.paros.network.HttpResponseHeader;
+import org.parosproxy.paros.network.HttpSender;
+import org.zaproxy.addon.authhelper.internal.db.Diagnostic;
+import org.zaproxy.addon.authhelper.internal.db.DiagnosticBrowserStorageItem;
+import org.zaproxy.addon.authhelper.internal.db.DiagnosticMessage;
+import org.zaproxy.addon.authhelper.internal.db.DiagnosticScreenshot;
+import org.zaproxy.addon.authhelper.internal.db.DiagnosticStep;
+import org.zaproxy.addon.authhelper.internal.db.DiagnosticWebElement;
+import org.zaproxy.addon.authhelper.internal.db.DiagnosticWebElement.SelectorType;
+import org.zaproxy.addon.authhelper.internal.db.TableJdo;
+import org.zaproxy.addon.network.common.ZapSocketTimeoutException;
+import org.zaproxy.zap.extension.zest.ZestZapUtils;
+import org.zaproxy.zap.model.Context;
+import org.zaproxy.zap.network.HttpSenderListener;
+import org.zaproxy.zest.core.v1.ZestClientElement;
+import org.zaproxy.zest.core.v1.ZestClientElementClear;
+import org.zaproxy.zest.core.v1.ZestClientFailException;
+import org.zaproxy.zest.core.v1.ZestClientLaunch;
+import org.zaproxy.zest.core.v1.ZestClientScreenshot;
+import org.zaproxy.zest.core.v1.ZestClientWindowClose;
+import org.zaproxy.zest.core.v1.ZestRuntime;
+import org.zaproxy.zest.core.v1.ZestScript;
+import org.zaproxy.zest.core.v1.ZestStatement;
+
+public class AuthenticationDiagnostics implements AutoCloseable {
+
+    private static final Logger LOGGER = LogManager.getLogger(AuthenticationDiagnostics.class);
+
+    private static final List<DiagnosticDataProvider> diagnosticDataProviders =
+            Collections.synchronizedList(new ArrayList<>());
+
+    private static final List<MessageAccessedConsumer> messageAccessedConsumers =
+            Collections.synchronizedList(new ArrayList<>());
+
+    private static volatile Retention retention;
+
+    private static final String ELEMENT_SELECTOR_SCRIPT =
+            """
+function isElementPathUnique(path, documentElement) {
+  const elements = documentElement.querySelectorAll(path);
+  return elements.length === 1;
+}
+
+function isElementXPathUnique(xpath, documentElement) {
+  const result = documentElement.evaluate(
+    xpath,
+    documentElement,
+    null,
+    XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+    null,
+  );
+  return result.snapshotLength === 1;
+}
+
+function getCSSSelector(element, documentElement) {
+  let selector = element.tagName.toLowerCase();
+  if (selector === "html") {
+    selector = "body";
+  } else if (element === documentElement.body) {
+    selector = "body";
+  } else if (element.parentNode) {
+    const parentSelector = getCSSSelector(element.parentNode, documentElement);
+    selector = `${parentSelector} > ${selector}`;
+  }
+  return selector;
+}
+
+function getXPath(element, documentElement) {
+  if (!element.tagName) {
+    return "";
+  }
+
+  let selector = element.tagName.toLowerCase();
+
+  if (element.id && isElementXPathUnique(selector, documentElement)) {
+    selector += `[@id="${element.id}"]`;
+  } else {
+    let index = 1;
+    let sibling = element.previousSibling;
+    let isUnique = true;
+    while (sibling) {
+      if (
+        sibling.nodeType === Node.ELEMENT_NODE &&
+        sibling.nodeName === element.nodeName
+      ) {
+        index += 1;
+        isUnique = false;
+      }
+      sibling = sibling.previousSibling;
+    }
+
+    if (isUnique) {
+      sibling = element.nextSibling;
+      while (sibling) {
+        if (
+          sibling.nodeType === Node.ELEMENT_NODE &&
+          sibling.nodeName === element.nodeName
+        ) {
+          isUnique = false;
+          break;
+        }
+        sibling = sibling.nextSibling;
+      }
+    }
+
+    if (index !== 1 || !isUnique) {
+      selector += `[${index}]`;
+    }
+  }
+
+  if (element.parentNode) {
+    const parentSelector = getXPath(element.parentNode, documentElement);
+    selector = `${parentSelector}/${selector}`;
+  }
+  return selector;
+}
+
+function getSelector(element, documentElement) {
+  const selector = { type: "", value: "" };
+
+  if (element.id) {
+    selector.type = "css";
+    selector.value = `#${element.id}`;
+  } else if (
+    element.classList.length === 1 &&
+    element.classList.item(0) != null &&
+    isElementPathUnique(`.${element.classList.item(0)}`, documentElement)
+  ) {
+    selector.type = "css";
+    selector.value = `.${element.classList.item(0)}`;
+  } else {
+    const cssSelector = getCSSSelector(element, documentElement);
+    if (cssSelector && isElementPathUnique(cssSelector, documentElement)) {
+      selector.type = "css";
+      selector.value = cssSelector;
+    } else {
+      const xpath = getXPath(element, documentElement);
+      if (xpath) {
+        selector.type = "xpath";
+        selector.value = xpath;
+      }
+    }
+  }
+
+  return selector;
+}
+
+return getSelector(arguments[0], document)
+""";
+
+    private final HttpSenderListener messageAccessedListener;
+
+    private final boolean enabled;
+    private final boolean failureOnly;
+    private final boolean recordSendFailures;
+
+    private Diagnostic diagnostic;
+    private HttpSenderListener listener;
+    private DiagnosticStep currentStep;
+    private ScriptKey elementSelectorScriptKey;
+    private boolean interrupted;
+
+    public AuthenticationDiagnostics(
+            boolean enabled, String authenticationMethod, String context, String user) {
+        this(enabled, authenticationMethod, context, user, null);
+    }
+
+    public AuthenticationDiagnostics(
+            boolean enabled,
+            String authenticationMethod,
+            String context,
+            String user,
+            String script) {
+        this(enabled, authenticationMethod, context, user, script, false);
+    }
+
+    /**
+     * Constructs an instance that also records the request of any message that failed to send (e.g.
+     * DNS failure), for the diagnostics job's own (non authentication-specific) traffic recording.
+     */
+    public AuthenticationDiagnostics(
+            boolean enabled,
+            String authenticationMethod,
+            String context,
+            String user,
+            boolean recordSendFailures) {
+        this(enabled, authenticationMethod, context, user, null, recordSendFailures);
+    }
+
+    private AuthenticationDiagnostics(
+            boolean enabled,
+            String authenticationMethod,
+            String context,
+            String user,
+            String script,
+            boolean recordSendFailures) {
+        this.recordSendFailures = recordSendFailures;
+        Retention currentRetention = retention;
+        boolean retained = currentRetention != null && currentRetention.isActive(context);
+        this.enabled = enabled || retained;
+        boolean retainedOnly = !enabled && retained;
+        this.failureOnly = retainedOnly && !currentRetention.isDetailed(context);
+
+        messageAccessedListener =
+                new HttpSenderListener() {
+
+                    private Context ctx = Model.getSingleton().getSession().getContext(context);
+
+                    @Override
+                    public void onHttpResponseReceive(
+                            HttpMessage msg, int initiator, HttpSender sender) {
+                        // Nothing to do.
+
+                    }
+
+                    @Override
+                    public void onHttpRequestSend(
+                            HttpMessage msg, int initiator, HttpSender sender) {
+                        messageAccessedConsumers.forEach(e -> e.messageAccessed(ctx, msg));
+                    }
+
+                    @Override
+                    public int getListenerOrder() {
+                        return 0;
+                    }
+                };
+        if (!retainedOnly) {
+            HttpSender.addListener(messageAccessedListener);
+        }
+
+        if (!this.enabled) {
+            return;
+        }
+
+        diagnostic = new Diagnostic(authenticationMethod, context, user);
+        diagnostic.setScript(script);
+        diagnostic.setCreateTimestamp(Instant.now());
+
+        createStep();
+
+        if (failureOnly) {
+            return;
+        }
+
+        listener =
+                new HttpSenderListener() {
+
+                    @Override
+                    public void onHttpRequestSend(
+                            HttpMessage msg, int initiator, HttpSender sender) {
+                        // Nothing to do, recording the whole message.
+                    }
+
+                    @Override
+                    public void onHttpResponseReceive(
+                            HttpMessage msg, int initiator, HttpSender sender) {
+                        if (!AuthUtils.isRelevantToAuthDiags(msg)) {
+                            return;
+                        }
+                        addMessageToStep(msg, initiator);
+                    }
+
+                    // TODO Add @Override once targeting core 2.18.0
+                    public void onHttpSendFailed(
+                            HttpMessage msg, int initiator, HttpSender sender, IOException cause) {
+                        recordSendFailure(msg, initiator, cause);
+                    }
+
+                    @Override
+                    public int getListenerOrder() {
+                        return Integer.MAX_VALUE;
+                    }
+                };
+        HttpSender.addListener(listener);
+    }
+
+    /**
+     * Records the request of a message that failed to send, if this instance was constructed to
+     * record send failures.
+     *
+     * <p>Increased visibility for Unit Test pusposes only.
+     */
+    void recordSendFailure(HttpMessage msg, int initiator, IOException cause) {
+        if (recordSendFailures) {
+            setFailureResponse(msg, cause);
+            addMessageToStep(msg, initiator);
+        }
+    }
+
+    /**
+     * Sets a synthetic response on the given message describing the given failure, so the reason
+     * the request has no real response is recorded along with it.
+     */
+    private static void setFailureResponse(HttpMessage msg, IOException cause) {
+        // 999 marks 'no response received', there being no real HTTP status code for a failed
+        // send.
+        String statusCode = "999";
+        String reasonPhrase = "No Response";
+        StringBuilder message = new StringBuilder();
+        if (cause instanceof ZapSocketTimeoutException timeoutException) {
+            message.append("Read timeout (").append(timeoutException.getTimeout()).append("s): ");
+        }
+        message.append(cause);
+
+        try {
+            HttpResponseHeader responseHeader =
+                    new HttpResponseHeader(
+                            HttpHeader.HTTP11 + " " + statusCode + " " + reasonPhrase);
+            responseHeader.setHeader(HttpHeader.CONTENT_TYPE, "text/plain; charset=UTF-8");
+            responseHeader.setHeader(
+                    HttpHeader.CONTENT_LENGTH,
+                    Integer.toString(message.toString().getBytes(StandardCharsets.UTF_8).length));
+            msg.setResponseHeader(responseHeader);
+            msg.setResponseBody(message.toString());
+        } catch (HttpMalformedHeaderException e) {
+            LOGGER.warn("Failed to create failure response header:", e);
+        }
+    }
+
+    private void addMessageToStep(HttpMessage msg) {
+        addMessageToStep(msg, 0);
+    }
+
+    private void addMessageToStep(HttpMessage msg, int initiator) {
+        try {
+            HistoryReference ref =
+                    new HistoryReference(
+                            Model.getSingleton().getSession(),
+                            HistoryReference.TYPE_AUTHENTICATION,
+                            msg);
+
+            DiagnosticMessage message = new DiagnosticMessage();
+            message.setCreateTimestamp(Instant.now());
+            message.setStep(currentStep);
+            message.setMessageId(ref.getHistoryId());
+            message.setInitiator(initiator);
+            currentStep.getMessages().add(message);
+        } catch (HttpMalformedHeaderException | DatabaseException e) {
+            LOGGER.warn("Failed to persist message:", e);
+        }
+    }
+
+    public void insertDiagnostics(ZestScript zestScript) {
+        if (!enabled || failureOnly) {
+            return;
+        }
+
+        for (int i = 0; i < zestScript.getStatements().size(); i++) {
+            ZestStatement stmt = zestScript.getStatements().get(i);
+            if (stmt instanceof ZestClientElementClear || !stmt.isEnabled()) {
+                continue;
+            }
+
+            if (stmt instanceof ZestClientLaunch launch) {
+                ZestClientScreenshotDiag screenshotDiag = new ZestClientScreenshotDiag();
+                screenshotDiag.setWindowHandle(launch.getWindowHandle());
+                screenshotDiag.setDescription(
+                        Constant.messages.getString("authhelper.auth.method.diags.zest.open"));
+                i += 1;
+                zestScript.getStatements().add(i, screenshotDiag);
+            } else if (stmt instanceof ZestClientElement element) {
+                ZestClientScreenshotDiag screenshotDiag = new ZestClientScreenshotDiag();
+                screenshotDiag.setClientElement(element);
+                screenshotDiag.setWindowHandle(element.getWindowHandle());
+                screenshotDiag.setDescription(
+                        Constant.messages.getString(
+                                "authhelper.auth.method.diags.zest.interaction",
+                                element.getIndex(),
+                                ZestZapUtils.toUiString(element, false)));
+                i += 1;
+                zestScript.getStatements().add(i, screenshotDiag);
+            } else if (stmt instanceof ZestClientWindowClose close) {
+                ZestClientScreenshotDiag screenshotDiag = new ZestClientScreenshotDiag();
+                screenshotDiag.setWindowHandle(close.getWindowHandle());
+                zestScript.getStatements().add(i, screenshotDiag);
+                screenshotDiag.setDescription(
+                        Constant.messages.getString("authhelper.auth.method.diags.zest.close"));
+                i += 1;
+            }
+        }
+    }
+
+    private void createStep() {
+        if (currentStep != null) {
+            currentStep.setDiagnostic(diagnostic);
+            diagnostic.getSteps().add(currentStep);
+        }
+        currentStep = new DiagnosticStep();
+    }
+
+    public void recordStep(WebDriver wd, String description) {
+        recordStep(wd, description, null);
+    }
+
+    public void recordStep(WebDriver wd, String description, WebElement element) {
+        if (!enabled || failureOnly) {
+            return;
+        }
+        recordStepImpl(wd, description, element);
+    }
+
+    private void recordStepImpl(WebDriver wd, String description, WebElement element) {
+        try {
+            Thread.sleep(150);
+        } catch (InterruptedException e) {
+            interrupted = true;
+        }
+
+        String url = withInterruptHandled(wd::getCurrentUrl);
+        currentStep.setCreateTimestamp(Instant.now());
+        currentStep.setUrl(url);
+        currentStep.setDescription(description);
+
+        if (wd instanceof TakesScreenshot ts) {
+            String data = captureScreenshot(ts, url);
+            if (data != null) {
+                DiagnosticScreenshot screenshot = new DiagnosticScreenshot();
+                screenshot.setData(data);
+                screenshot.setCreateTimestamp(Instant.now());
+                screenshot.setStep(currentStep);
+                currentStep.setScreenshot(screenshot);
+            }
+        }
+
+        try {
+            if (!failureOnly) {
+                recordElements(wd, element);
+                recordStorage(wd);
+            }
+        } catch (WebDriverException e) {
+            if (!(e.getCause() instanceof InterruptedException)) {
+                throw e;
+            }
+            interrupted = true;
+        }
+
+        createStep();
+
+        if (interrupted) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private void recordElements(WebDriver wd, WebElement element) {
+        if (interrupted) {
+            return;
+        }
+
+        List<WebElement> foundElements =
+                resetWait(wd, () -> wd.findElements(By.xpath("//input|//button")), () -> List.of());
+        List<WebElement> forms =
+                resetWait(wd, () -> wd.findElements(By.xpath("//form")), () -> List.of());
+
+        currentStep.setWebElement(createDiagnosticWebElement(wd, forms, element));
+        for (WebElement foundElement : foundElements) {
+            DiagnosticWebElement field = createDiagnosticWebElement(wd, forms, foundElement);
+            if (field != null) {
+                currentStep.getWebElements().add(field);
+            }
+        }
+    }
+
+    private void recordStorage(WebDriver wd) {
+        if (interrupted) {
+            return;
+        }
+
+        if (wd instanceof JavascriptExecutor je) {
+            for (var type : DiagnosticBrowserStorageItem.Type.values()) {
+                processStorage(je, type);
+            }
+        }
+    }
+
+    private <T> T withInterruptHandled(Supplier<T> function) {
+        interrupted |= Thread.interrupted();
+
+        try {
+            return function.get();
+        } catch (WebDriverException e) {
+            if (!(e.getCause() instanceof InterruptedException)) {
+                throw e;
+            }
+
+            // Retry again with interruption cleared.
+            interrupted |= Thread.interrupted();
+
+            return function.get();
+        }
+    }
+
+    private static String captureScreenshot(TakesScreenshot ts, String url) {
+        try {
+            return ts.getScreenshotAs(OutputType.BASE64);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to capture the screenshot at {}", url);
+            return null;
+        }
+    }
+
+    /**
+     * Reset the webdriver implicit wait - use when you want the current state and don't want any
+     * delays.
+     */
+    private static <T> T resetWait(
+            WebDriver wd, Supplier<? extends T> function, Supplier<T> defaultValue) {
+        Duration duration = wd.manage().timeouts().getImplicitWaitTimeout();
+        wd.manage().timeouts().implicitlyWait(Duration.ofMillis(0));
+        try {
+            return function.get();
+        } catch (Exception e) {
+            return defaultValue.get();
+        } finally {
+            wd.manage().timeouts().implicitlyWait(duration);
+        }
+    }
+
+    private void processStorage(JavascriptExecutor je, DiagnosticBrowserStorageItem.Type type) {
+        try {
+            @SuppressWarnings("unchecked")
+            List<Map<String, String>> storage =
+                    (List<Map<String, String>>) je.executeScript(type.getScript());
+            if (storage == null || storage.isEmpty()) {
+                return;
+            }
+
+            storage.stream()
+                    .map(
+                            e -> {
+                                DiagnosticBrowserStorageItem item =
+                                        new DiagnosticBrowserStorageItem();
+                                item.setCreateTimestamp(Instant.now());
+                                item.setStep(currentStep);
+                                item.setType(type);
+                                item.setKey(e.get("key"));
+                                item.setValue(e.get("value"));
+                                return item;
+                            })
+                    .forEach(currentStep.getBrowserStorageItems()::add);
+        } catch (WebDriverException e) {
+            LOGGER.debug("Failed to process the storage:", e);
+        }
+    }
+
+    private DiagnosticWebElement createDiagnosticWebElement(
+            WebDriver wd, List<WebElement> forms, WebElement element) {
+        if (element == null) {
+            return null;
+        }
+
+        try {
+            DiagnosticWebElement diagElement = new DiagnosticWebElement();
+            diagElement.setCreateTimestamp(Instant.now());
+            if (wd instanceof JavascriptExecutor je) {
+                WebElement form =
+                        (WebElement) je.executeScript("return arguments[0].form", element);
+                if (form != null) {
+                    int idx = forms.indexOf(form);
+                    diagElement.setFormIndex(idx != -1 ? idx : null);
+                }
+
+                if (elementSelectorScriptKey == null) {
+                    elementSelectorScriptKey = je.pin(ELEMENT_SELECTOR_SCRIPT);
+                }
+
+                @SuppressWarnings("unchecked")
+                Map<String, String> data =
+                        (Map<String, String>) je.executeScript(elementSelectorScriptKey, element);
+                diagElement.setSelectorType(
+                        "xpath".equals(data.get("type")) ? SelectorType.XPATH : SelectorType.CSS);
+                diagElement.setSelectorValue(data.get("value"));
+            }
+
+            diagElement.setTagName(element.getTagName());
+            diagElement.setAttributeType(element.getAttribute("type"));
+            diagElement.setAttributeId(element.getAttribute("id"));
+            diagElement.setAttributeName(element.getAttribute("name"));
+            diagElement.setAttributeValue(element.getAttribute("value"));
+            diagElement.setText(element.getText());
+            diagElement.setDisplayed(element.isDisplayed());
+            diagElement.setEnabled(element.isEnabled());
+
+            return diagElement;
+        } catch (WebDriverException e) {
+            LOGGER.debug("Failed to obtain field data:", e);
+            return null;
+        }
+    }
+
+    private void finishCurrentStep(String url, String description) {
+        currentStep.setCreateTimestamp(Instant.now());
+        currentStep.setUrl(url);
+        currentStep.setDescription(description);
+        createStep();
+    }
+
+    public void recordErrorStep(WebDriver webDriver) {
+        if (!enabled) {
+            return;
+        }
+
+        try {
+            String description =
+                    Constant.messages.getString("authhelper.auth.method.diags.steps.error");
+            if (webDriver == null) {
+                recordStepImpl(description);
+            } else {
+                recordStepImpl(webDriver, description, null);
+            }
+        } catch (Exception e) {
+            LOGGER.warn("An error occurred while recording the error step:", e);
+        }
+    }
+
+    public void reportFlowException(Exception cause) {
+        if (!enabled) {
+            return;
+        }
+
+        LOGGER.info("Exception during steps:", cause);
+    }
+
+    public void recordStep(String description) {
+        if (!enabled || failureOnly) {
+            return;
+        }
+        recordStepImpl(description);
+    }
+
+    private void recordStepImpl(String description) {
+        finishCurrentStep("", description);
+    }
+
+    public void recordStep(HttpMessage message, String description) {
+        if (!enabled || failureOnly) {
+            return;
+        }
+        addMessageToStep(message);
+        finishCurrentStep(message.getRequestHeader().getURI().toString(), description);
+    }
+
+    @Override
+    public void close() {
+        HttpSender.removeListener(messageAccessedListener);
+
+        if (!enabled) {
+            return;
+        }
+
+        if (listener != null) {
+            HttpSender.removeListener(listener);
+        }
+
+        diagnosticDataProviders.forEach(
+                provider -> {
+                    try {
+                        provider.addDiagnostics(diagnostic);
+                    } catch (Exception e) {
+                        LOGGER.error("An error occurred calling a data provider:", e);
+                    }
+                });
+
+        Retention currentRetention = retention;
+        if (currentRetention != null && currentRetention.isActive(diagnostic.getContext())) {
+            currentRetention.defer(diagnostic);
+            return;
+        }
+
+        persist(diagnostic, interrupted);
+    }
+
+    /**
+     * Persists the given diagnostic, populating its identity on success.
+     *
+     * @param diagnostic the diagnostic to persist.
+     * @param interrupted whether the current thread was already found interrupted.
+     */
+    static void persist(Diagnostic diagnostic, boolean interrupted) {
+        interrupted |= Thread.interrupted();
+
+        PersistenceManager pm = TableJdo.getPmf().getPersistenceManager();
+        Transaction tx = pm.currentTransaction();
+        try {
+            tx.begin();
+            pm.makePersistent(diagnostic);
+            tx.commit();
+        } catch (Exception e) {
+            LOGGER.warn("Failed to persist diagnostics:", e);
+        } finally {
+            if (tx.isActive()) {
+                tx.rollback();
+            }
+            pm.close();
+
+            // JDO/DataNucleus does not restore the interruption.
+            if (interrupted) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    /**
+     * Deletes the diagnostic with the given id, if it still exists.
+     *
+     * @param id the id of the diagnostic to delete.
+     */
+    public static void delete(int id) {
+        PersistenceManager pm = TableJdo.getPmf().getPersistenceManager();
+        Transaction tx = pm.currentTransaction();
+        try {
+            tx.begin();
+            pm.deletePersistent(pm.getObjectById(Diagnostic.class, id));
+            tx.commit();
+        } catch (Exception e) {
+            LOGGER.warn("Failed to delete diagnostic {}:", id, e);
+        } finally {
+            if (tx.isActive()) {
+                tx.rollback();
+            }
+            pm.close();
+        }
+    }
+
+    private class ZestClientScreenshotDiag extends ZestClientScreenshot {
+
+        private String description;
+
+        private ZestClientElement element;
+
+        public void setClientElement(ZestClientElement element) {
+            this.element = element;
+        }
+
+        public void setDescription(String description) {
+            this.description = description;
+        }
+
+        @Override
+        public String invoke(ZestRuntime runtime) throws ZestClientFailException {
+            recordStep(
+                    runtime.getWebDriver(this.getWindowHandle()),
+                    description,
+                    getWebElement(runtime, element));
+            return null;
+        }
+
+        private WebElement getWebElement(ZestRuntime runtime, ZestClientElement element) {
+            if (element == null) {
+                return null;
+            }
+
+            WebDriver wd = runtime.getWebDriver(this.getWindowHandle());
+            if (wd == null) {
+                return null;
+            }
+
+            return resetWait(
+                    wd,
+                    () -> {
+                        int waitForMsec = element.getWaitForMsec();
+                        try {
+                            element.setWaitForMsec(0);
+                            return element.getWebElement(runtime);
+                        } catch (ZestClientFailException e) {
+                            return null;
+                        } finally {
+                            element.setWaitForMsec(waitForMsec);
+                        }
+                    },
+                    () -> null);
+        }
+    }
+
+    public static void addMessageAccessedConsumer(MessageAccessedConsumer consumer) {
+        Objects.requireNonNull(consumer);
+        messageAccessedConsumers.add(consumer);
+    }
+
+    public static void removeMessageAccessedConsumer(MessageAccessedConsumer consumer) {
+        Objects.requireNonNull(consumer);
+        messageAccessedConsumers.remove(consumer);
+    }
+
+    public interface MessageAccessedConsumer {
+
+        void messageAccessed(Context ctx, HttpMessage message);
+    }
+
+    public static void addDiagnosticDataProvider(DiagnosticDataProvider provider) {
+        Objects.requireNonNull(provider);
+        diagnosticDataProviders.add(provider);
+    }
+
+    public static void removeDiagnosticDataProvider(DiagnosticDataProvider provider) {
+        Objects.requireNonNull(provider);
+        diagnosticDataProviders.remove(provider);
+    }
+
+    private static FlushRunnable flushHook;
+
+    public static void setFlushHook(FlushRunnable hook) {
+        flushHook = hook;
+    }
+
+    public static void callFlushHook() {
+        if (flushHook != null) {
+            flushHook.flush();
+        }
+    }
+
+    public interface DiagnosticDataProvider {
+
+        void addDiagnostics(Diagnostic diagnostic);
+    }
+
+    /**
+     * Sets the retention that takes over the persistence of diagnostics for the contexts it is
+     * active for.
+     *
+     * @param retention the retention, or {@code null} to always persist on {@link #close()}.
+     */
+    public static void setRetention(Retention retention) {
+        AuthenticationDiagnostics.retention = retention;
+    }
+
+    /** Decides what happens to a diagnostic when it is closed, instead of persisting it. */
+    public interface Retention {
+
+        /** Tells whether this retention applies to the given context. */
+        boolean isActive(String context);
+
+        /** Tells whether the retention keeps all the data of the steps, or just the essentials. */
+        boolean isDetailed(String context);
+
+        /** Takes ownership of the diagnostic, which is not persisted by {@link #close()}. */
+        void defer(Diagnostic diagnostic);
+    }
+
+    public interface FlushRunnable {
+
+        void flush();
+    }
+}

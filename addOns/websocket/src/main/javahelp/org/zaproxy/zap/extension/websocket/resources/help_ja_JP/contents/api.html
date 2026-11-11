@@ -1,0 +1,54 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<TITLE>
+WebSocket API
+</TITLE>
+</HEAD>
+<BODY>
+<H1>WebSocket API</H1>
+
+<h2>ビュー</h2>
+	<h3>channels</h3>
+		登録済みのWebソケットチャンネルをすべて返します。
+
+	<h3>message</h3>
+	
+		必須パラメーター：
+		<ul>
+		<li>channelId: チャネルID</li>
+		<li>messageId: メッセージID</li>
+		</ul>
+		指定されたメッセージの詳細な情報を返します。<br>
+「channelId」と「messageId」は、「messages」ビューを介して取得できます。
+
+	<h3>messages</h3>
+	
+		オプションパラメーター：
+		<ul>
+		<li>channelId: チャネルID</li>
+		<li>start: メッセージの取得を開始するオフセット。値は0から始まります。</li>
+		<li>count: 返すメッセージの数。</li>
+		<li>payloadPreviewLength: ペイロードの最大バイト数。</li>
+		</ul>
+		指定された基準を満たすすべてのメッセージのリストを返します。デフォルトでは、すべてのメッセージが返されます。<br>
+「channelId」は「channels」ビューを介して取得できます。<br>
+「start」および「count」パラメーターは、メッセージのページ送りに使用できます。<br>
+「payloadPreviewLength」は、返されるデータのサイズを制限するために使用できます。<br>
+
+<h2>アクション</h2>
+
+	<h3>sendTextMessage</h3>
+	
+		必須パラメーター：
+		<ul>
+		<li>channelId: チャネルID</li>
+		<li>outgoing: メッセージをサーバーに送信する場合は「True」、クライアントに送信する場合は「False」を指定します。</li>
+		<li>message: 送信するメッセージ。</li>
+		</ul>
+		指定されたチャネルで指定されたメッセージを送信します。<br>
+「channelId」は「channels」ビューを介して取得できます。<br>
+
+</BODY>
+</HTML>

@@ -1,0 +1,23 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<TITLE>
+GraalVM JavaScript
+</TITLE>
+</HEAD>
+<BODY>
+<H1>GraalVM JavaScript</H1>
+Позволяет использовать механизм JavaScript <a href="https://www.graalvm.org/">GraalVM</a> для сценариев ZAP. 
+
+<h2>Engine Name</h2>
+The engine is named <code>Graal.js</code>, which should be used when manually/programmatically configuring ZAP.
+
+<h2>Engine Lifecycle and Script Types</h2>
+Graal.js engines are automatically closed when the engine and any results produced by it are no longer in use.
+Scripts that are short lived, such as <code>standalone</code> scripts, should therefore not add or install components into ZAP, because those components will become stale when the engine is closed.
+For components that are expected to live longer, use the <code>extender</code> script type instead.
+Extender scripts are expected to manage their lifecycle explicitly via their <code>install</code> and <code>uninstall</code> methods.
+
+</BODY>
+</HTML>

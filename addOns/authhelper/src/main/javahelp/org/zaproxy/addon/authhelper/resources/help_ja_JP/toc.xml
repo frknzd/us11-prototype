@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE toc PUBLIC "-//Sun Microsystems Inc.//DTD JavaHelp TOC Version 2.0//EN" "http://java.sun.com/products/javahelp/toc_2_0.dtd">
+<toc version="2.0">
+	<tocitem text="ZAP ユーザーガイド" tocid="toplevelitem">
+		<tocitem text="アドオン" tocid="addons">
+			<tocitem text="認証ヘルパー" image="authhelper-icon" target="authhelper">
+				<tocitem text="認証レポート" target="authhelper.auth-report-json"/>
+				<tocitem text="認証リクエストの識別" target="authhelper.auth-req-id"/>
+				<tocitem text="認証テスターダイアログ" target="authhelper.auth-tester"/>
+				<tocitem text="認証の自動検出" target="authhelper.autodetect-auth"/>
+				<tocitem text="セッション管理の自動検出" target="authhelper.autodetect-session"/>
+				<tocitem text="自動化フレームワーク対応" target="authhelper.automation"/>
+				<tocitem text="ブラウザベース認証" target="authhelper.browser-auth"/>
+				<tocitem text="クライアントスクリプト認証" target="authhelper.client-script-auth"/>
+				<tocitem text="ヘッダーベースセッション管理" target="authhelper.session-header"/>
+				<tocitem text="OAuth2 Authentication" target="authhelper.oauth2-auth"/>
+				<tocitem text="Report Templates" target="authhelper.report-templates"/>
+				<tocitem text="Session Management Identification" target="authhelper.session-mgmt-id"/>
+				<tocitem text="Verification Identification" target="authhelper.verification-id"/>
+			</tocitem>
+		</tocitem>
+	</tocitem>
+</toc>

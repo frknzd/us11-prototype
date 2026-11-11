@@ -1,0 +1,52 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+    <meta HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+    <title>BOASTオプション</title>
+</head>
+<body>
+<h1>BOASTオプション</h1>
+<p>
+    BOASTオプション画面では、ZAPがBOASTサーバーと**連携する方法**に影響する設定を構成できます。
+</p>
+
+<h3>サーバーURI</h3>
+
+<p>このアドレスは登録とポーリングに使用されるURIを指している必要があります。</p>
+<p>有効なURIには、スキーム、ホスト、ポート、および <code>/events</code> エンドポイントが含まれます。ホストでは、稼働中のBOASTインスタンスが実行されている必要があります。</p>
+<p>有効なURIの例は、<code>https://example.com:1337/events</code> です。</p>
+
+<h3>ポーリング頻度</h3>
+
+<p>このオプションを使用すると、登録されたBOASTサーバーをポーリングする頻度を変更できます。値は秒単位で指定します。最小値は10秒、最大値は21600秒 (6時間) です。デフォルト値は60秒です。</p>
+
+<h3>アクティブサーバー</h3>
+
+<p>この表には、登録されているすべてのBOASTサーバーのペイロードとカナリア値が一覧表示されます。新しいBOASTサーバーを登録するたびにエントリが追加されます。</p>
+
+<h4>ペイロード</h4>
+
+<p>ペイロードはアウトオブバンド攻撃で使用できるアクティブなBOASTサーバーのアドレスです。</p>
+
+<h4>カナリア</h4>
+
+<p>カナリア値は、ターゲットWebアプリケーションが対応するペイロードアドレスにリクエストを行うときに返されるランダムな文字列です。</p>
+<p>この値の使用例を考えます。ターゲットWebアプリケーションが最終的にどこかでカナリア値を使用する場合、アウトオブバンドインジェクション攻撃に対して脆弱である可能性があります。 </p>
+
+
+<H2>関連情報</H2>
+<table>
+    <tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td>
+            <a href="boast.html">BOASTヘルプ</a></td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td><a href="https://github.com/ciphermarco/BOAST">GitHubにあるBOAST</a></td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+</body>
+</html>

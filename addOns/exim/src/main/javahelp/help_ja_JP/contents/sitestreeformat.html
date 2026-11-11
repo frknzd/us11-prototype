@@ -1,0 +1,69 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+    <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+    <TITLE>
+        サイトツリーファイル形式
+    </TITLE>
+</HEAD>
+<BODY>
+
+<H1>サイトツリーファイル形式</H1>
+
+サイトツリー形式は、ZAPサイトツリーのYAML表現です。<br>
+これはノードの階層であり、各ノードは、サイトツリー内の対応するノードを一意に識別するために必要なすべての本質的な情報を表します。
+<p>
+各ノードは次の形式を持っています：
+
+<pre>
+  - node:              # ZAPサイトツリーに表示されるノードの名前
+    url:               # それが表すURL。トップノード以外のすべてに存在する
+    method:            # HTTPメソッド。トップノード以外のすべてに存在する
+    responseLength:    # 該当する場合、レスポンスの長さ
+    statusCode:        # 該当する場合、HTTPステータスコード
+    data:              # 存在する場合、データパラメータの名前。'=&amp;' とアンパサンド (&amp;) の組み合わせで区切られます
+    children:          # 子ノードのリスト。リーフノードを除くすべてのノードに存在する
+</pre>
+
+<p>
+コンテキストを含めてサイトツリーをエクスポートする場合、コンテキスト外にあるもののツリー内に存在するノードについては、ツリー構造を維持するため、ノード名および子ノード (コンテキスト内に存在する場合) を除くすべてのプロパティが除外されます。
+</p>
+<p>
+この形式は、<a href="automation.html">自動化フレームワーク</a>の export および prune ジョブ、ならびに対応する<a href="exim.html">デスクトップメニュー</a>で使用されます。
+<p>
+
+完全な単純な例：
+
+<pre>
+- node: Sites
+  children:
+  - node: https://www.example.com
+    url: https://www.example.com
+    method: GET
+    children:
+    - node: missing
+      url: https://www.example.com/missing
+      method: GET
+      responseLength: 1221
+      statusCode: 404
+    - node: path
+      url: https://www.example.com/path
+      method: GET
+      responseLength: 1234
+      statusCode: 200
+      children:
+      - node: GET:query(q)
+        url: https://www.example.com/seq/query?q=search
+        method: GET
+        responseLength: 2345
+        statusCode: 200
+      - node: submit
+        url: https://www.example.com/seq/submit()(field1,field2,field3)
+        method: POST
+        data: field1=&amp;field2=&amp;field3=
+        responseLength: 3456
+        statusCode: 200
+</pre>
+
+</BODY>
+</HTML>

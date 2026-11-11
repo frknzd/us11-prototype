@@ -1,0 +1,77 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<title>
+パッシブスキャンルール - Alpha
+</title>
+</head>
+<body>
+<h1>パッシブスキャンルール - Alpha</h1>
+
+以下のアルファステータスのパッシブスキャンルールがこのアドオンに含まれています：
+
+<h2 id="id-10094">Base64の漏洩</h2>
+<ul>
+ <li><b>ASP.NET ViewStateの露見:</b> アプリケーション/Webサーバーによって、ASP.NET ViewState が公開されました</li>
+ <li><b>ASP.NET ViewStateの完全性:</b> アプリケーションがASP.NET ViewStateの完全性を保護するためにメッセージ認証コード (MAC) を使用していません。このため、悪意のあるクライアントによって改ざんされる可能性があります。</li>
+ <li><b>Base64の漏洩:</b> アプリケーションまたはWebサーバーによってBase64エンコードされたデータが漏洩しました。</li>
+</ul>
+<strong>注:</strong> 低しきい値では、各レスポンス内のすべての発生が含まれます。
+<p>
+最新のコード: <a href="https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesAlpha/src/main/java/org/zaproxy/zap/extension/pscanrulesAlpha/Base64Disclosure.java">Base64Disclosure.java</a><br>
+アラートID: <a href="https://www.zaproxy.org/docs/alerts/10094/">10094</a>.
+
+<h2 id="id-90005">Fetch Metadataリクエストヘッダースキャンルール</h2>
+Fetch Metadata リクエストヘッダーは、HTTP リクエストヘッダーで、リクエストのオリジンに関する追加情報を提供します。この追加情報は、サーバーがリソース隔離ポリシーを実装するのを助け、外部サイトが共有を意図したリソースのみをリクエストし、適切に使用されるようにします。このアプローチは、CSRF、クロスサイトスクリプトインジェクション、タイミング攻撃、クロスオリジン情報漏洩などの一般的なクロスサイトウェブ脆弱性を緩和するのに役立ちます。
+Fetch Metadata リクエストヘッダーは以下の通りです：
+<ul>
+ <li>Sec-Fetch-Site</li>
+ <li>Sec-Fetch-Mode</li>
+ <li>Sec-Fetch-Dest</li>
+ <li>Sec-Fetch-User</li>
+</ul>
+( <a href="https://developer.mozilla.org/en-US/docs/Glossary/Fetch_metadata_request_header">Fetch Metadata Headers</a> より<a href="#"></a>)
+
+<p>
+Sec-Fetch-Site は、リクエストイニシエーターのオリジンとリクエストされたリソースのオリジン間の関係を示します。
+(<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Sec-Fetch-Site">Sec-Fetch-Site</a> より))
+
+<p>
+Sec-Fetch-Mode は、サーバーが HTML ページ間をナビゲートするユーザーからのリクエストと、画像や他のリソースをロードするリクエストを区別できるようにします。
+(<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Sec-Fetch-Mode">Sec-Fetch-Mode</a> より)
+
+<p>
+Sec-Fetch-Dest は、リクエストされたリソースがどこでどのように使用されるかを示します。
+(<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Sec-Fetch-Dest">Sec-Fetch-Dest</a> より)
+
+<p>
+Sec-Fetch-User は、ユーザーアクティベーションによって開始されたリクエストに対してのみ送信されます。
+(<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Sec-Fetch-User">Sec-Fetch-User</a> より)
+
+<p>
+ 生成されるアラート：
+<ul>
+ <li><b>Sec-Fetch-Siteヘッダーがありません</b></li>
+ <li><b>Sec-Fetch-Site ヘッダーに無効な値があります</b></li>
+ <li><b>Sec-Fetch-Modeヘッダーがありません</b></li>
+ <li><b>Sec-Fetch-Mode ヘッダーに無効な値があります</b></li>
+ <li><b>Sec-Fetch-Destヘッダーがありません</b></li>
+ <li><b>Sec-Fetch-Dest ヘッダーに無効な値があります</b></li>
+ <li><b>Sec-Fetch-Userヘッダーがありません</b></li>
+ <li><b>Sec-Fetch-User ヘッダーに無効な値があります</b></li>
+</ul>
+<p>
+ 最新のコード: <a href="https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesAlpha/src/main/java/org/zaproxy/zap/extension/pscanrulesAlpha/FetchMetadataRequestHeadersScanRule.java">FetchMetadataRequestHeadersScanRule.java</a><br>
+アラートID: <a href="https://www.zaproxy.org/docs/alerts/90005/">90005</a>.
+
+<h2 id="id-110009">フルパスの露見スキャンルール</h2>
+<p>フルパス露見の脆弱性とは、アプリケーションのルートパスが攻撃者に貴重な情報を提供するものです。フルパス露見の脆弱性の例: /home/omg/htdocs/file/ または C:\Users\username\server\
+</p>
+<p>攻撃者はこのパスを使用して、資格情報や他のプライベート情報を窃取する可能性があります。詳細については <a href="https://owasp.org/www-community/attacks/Full_Path_Disclosure">OWASP 記事</a> を参照してください。</p>
+
+<p>最新のコード: <a href="https://github.com/zaproxy/zap-extensions/blob/main/addOns/pscanrulesAlpha/src/main/java/org/zaproxy/zap/extension/pscanrulesAlpha/FullPathDisclosureScanRule.java">FullPathDisclosureScanRule.java</a><br>
+アラートID: <a href="https://www.zaproxy.org/docs/alerts/110009/">110009</a>.
+</p>
+
+</body>
+</html>

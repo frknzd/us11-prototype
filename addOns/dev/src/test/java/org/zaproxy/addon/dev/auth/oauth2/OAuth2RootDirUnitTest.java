@@ -1,0 +1,860 @@
+/*
+ * Zed Attack Proxy (ZAP) and its related class files.
+ *
+ * ZAP is an HTTP/HTTPS proxy for assessing web application security.
+ *
+ * Copyright 2026 The ZAP Development Team
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.zaproxy.addon.dev.auth.oauth2;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.Base64;
+import net.sf.json.JSON;
+import net.sf.json.JSONObject;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.parosproxy.paros.network.HttpHeader;
+import org.parosproxy.paros.network.HttpMessage;
+import org.parosproxy.paros.network.HttpRequestHeader;
+import org.zaproxy.addon.dev.TestProxyServer;
+
+/**
+ * Unit tests for the logic in {@link OAuth2RootDir} that can be exercised directly, without going
+ * through the actual domain-listener/HTTP dispatch plumbing (a mocked {@link TestProxyServer} is
+ * enough to construct an instance, since the constructor only registers listeners on it).
+ */
+class OAuth2RootDirUnitTest {
+
+    @Test
+    void shouldValidateConfidentialClient() {
+        assertThat(OAuth2RootDir.isValidClient("test-client", "test-secret"), is(equalTo(true)));
+    }
+
+    @Test
+    void shouldRejectConfidentialClientWithWrongSecret() {
+        assertThat(OAuth2RootDir.isValidClient("test-client", "wrong-secret"), is(equalTo(false)));
+    }
+
+    @Test
+    void shouldRejectConfidentialClientWithNoSecret() {
+        assertThat(OAuth2RootDir.isValidClient("test-client", null), is(equalTo(false)));
+    }
+
+    @Test
+    void shouldValidatePublicClientWithNoSecret() {
+        assertThat(OAuth2RootDir.isValidClient("test-public-client", null), is(equalTo(true)));
+        assertThat(OAuth2RootDir.isValidClient("test-public-client", ""), is(equalTo(true)));
+    }
+
+    @Test
+    void shouldRejectPublicClientIfASecretIsPresented() {
+        assertThat(
+                OAuth2RootDir.isValidClient("test-public-client", "some-secret"),
+                is(equalTo(false)));
+    }
+
+    @Test
+    void shouldRejectUnknownClient() {
+        assertThat(OAuth2RootDir.isValidClient("unknown-client", "anything"), is(equalTo(false)));
+        assertThat(OAuth2RootDir.isValidClient(null, null), is(equalTo(false)));
+    }
+
+    @Test
+    void shouldExtractClientCredentialsFromBasicAuthHeader() throws Exception {
+        // Given
+        HttpMessage msg = new HttpMessage();
+        msg.setRequestHeader(
+                new HttpRequestHeader(
+                        "POST /token HTTP/1.1\r\nHost: authserver.oauth2.zap\r\n\r\n"));
+        String basic =
+                Base64.getEncoder()
+                        .encodeToString("test-client:test-secret".getBytes(StandardCharsets.UTF_8));
+        msg.getRequestHeader().setHeader("Authorization", "Basic " + basic);
+
+        // When
+        String[] creds = OAuth2RootDir.extractClientCredentials(msg);
+
+        // Then
+        assertThat(creds[0], is(equalTo("test-client")));
+        assertThat(creds[1], is(equalTo("test-secret")));
+    }
+
+    @Test
+    void shouldExtractClientCredentialsFromFormParamsWhenNoAuthHeader() throws Exception {
+        // Given
+        HttpMessage msg = new HttpMessage();
+        msg.setRequestHeader(
+                new HttpRequestHeader(
+                        "POST /token HTTP/1.1\r\nHost: authserver.oauth2.zap\r\n\r\n"));
+        msg.getRequestHeader()
+                .setHeader(
+                        org.parosproxy.paros.network.HttpHeader.CONTENT_TYPE,
+                        "application/x-www-form-urlencoded");
+        msg.getRequestBody()
+                .setBody(
+                        "grant_type=client_credentials&client_id=test-client&client_secret=test-secret");
+
+        // When
+        String[] creds = OAuth2RootDir.extractClientCredentials(msg);
+
+        // Then
+        assertThat(creds[0], is(equalTo("test-client")));
+        assertThat(creds[1], is(equalTo("test-secret")));
+    }
+
+    @Test
+    void shouldMatchS256CodeChallengeUsingRfc7636TestVector() throws Exception {
+        // Given - the exact example verifier/challenge pair from RFC 7636 Appendix B
+        String verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
+        String challenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM";
+
+        // When / Then
+        assertThat(
+                OAuth2RootDir.matchesCodeChallenge(verifier, challenge, "S256"), is(equalTo(true)));
+        assertThat(
+                OAuth2RootDir.matchesCodeChallenge(verifier + "x", challenge, "S256"),
+                is(equalTo(false)));
+
+        // And it matches independent manual computation
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hash = digest.digest(verifier.getBytes(StandardCharsets.US_ASCII));
+        String expected = Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
+        assertThat(challenge, is(equalTo(expected)));
+    }
+
+    @Test
+    void shouldMatchPlainCodeChallenge() {
+        assertThat(
+                OAuth2RootDir.matchesCodeChallenge("my-verifier", "my-verifier", "plain"),
+                is(equalTo(true)));
+        assertThat(
+                OAuth2RootDir.matchesCodeChallenge("my-verifier", "other-value", "plain"),
+                is(equalTo(false)));
+    }
+
+    @Test
+    void shouldRenameFieldWhenPresent() {
+        // Given
+        JSONObject json = new JSONObject();
+        json.put("access_token", "abc123");
+        json.put("token_type", "Bearer");
+
+        // When
+        OAuth2RootDir.renameField(json, "access_token", "accessToken");
+
+        // Then
+        assertThat(json.has("access_token"), is(equalTo(false)));
+        assertThat(json.getString("accessToken"), is(equalTo("abc123")));
+        assertThat(json.getString("token_type"), is(equalTo("Bearer")));
+    }
+
+    @Test
+    void shouldNotFailRenamingAnAbsentField() {
+        // Given
+        JSONObject json = new JSONObject();
+        json.put("token_type", "Bearer");
+
+        // When
+        OAuth2RootDir.renameField(json, "access_token", "accessToken");
+
+        // Then
+        assertThat(json.has("accessToken"), is(equalTo(false)));
+        assertThat(json.getString("token_type"), is(equalTo("Bearer")));
+    }
+
+    @Test
+    void shouldIssueTokensForNullSubject() {
+        // Given
+        OAuth2RootDir dir = new OAuth2RootDir(mock(TestProxyServer.class), "oauth2");
+        // When
+        JSONObject tokens = dir.issueTokens(null, null, true);
+        // Then
+        assertThat(tokens.has("access_token"), is(equalTo(true)));
+        assertThat(tokens.has("refresh_token"), is(equalTo(true)));
+    }
+
+    @Test
+    void shouldRotateRefreshTokenOnUseAndRejectItAfterwards() throws Exception {
+        // Given
+        OAuth2RootDir dir = new OAuth2RootDir(mock(TestProxyServer.class), "oauth2");
+        String firstRefreshToken =
+                dir.issueTokens("test@test.com", null, true).getString("refresh_token");
+
+        // When
+        JSONObject rotated =
+                dir.handleRefreshTokenGrant(
+                        refreshTokenRequest(firstRefreshToken), "test-client", "test-secret");
+
+        // Then
+        assertThat(rotated.has("error"), is(equalTo(false)));
+        String secondRefreshToken = rotated.getString("refresh_token");
+        assertThat(secondRefreshToken, is(not(equalTo(firstRefreshToken))));
+
+        // When - replaying the now rotated-away token
+        JSONObject replay =
+                dir.handleRefreshTokenGrant(
+                        refreshTokenRequest(firstRefreshToken), "test-client", "test-secret");
+
+        // Then
+        assertThat(replay.getString("error"), is(equalTo("invalid_grant")));
+    }
+
+    private static HttpMessage refreshTokenRequest(String refreshToken) throws Exception {
+        HttpMessage msg = new HttpMessage();
+        msg.setRequestHeader(
+                new HttpRequestHeader(
+                        "POST /token HTTP/1.1\r\nHost: authserver.oauth2.zap\r\n\r\n"));
+        msg.getRequestHeader()
+                .setHeader(HttpHeader.CONTENT_TYPE, "application/x-www-form-urlencoded");
+        msg.getRequestBody().setBody("grant_type=refresh_token&refresh_token=" + refreshToken);
+        return msg;
+    }
+
+    @Test
+    void shouldIntrospectActiveToken() throws Exception {
+        // Given
+        OAuth2RootDir dir = new OAuth2RootDir(mock(TestProxyServer.class), "oauth2");
+        String accessToken =
+                dir.issueTokens("test@test.com", null, false).getString("access_token");
+
+        // When
+        JSONObject response =
+                dir.handleIntrospect(
+                        introspectionRequest(accessToken, "test-client", "test-secret"));
+
+        // Then
+        assertThat(response.getBoolean("active"), is(equalTo(true)));
+        assertThat(response.getString("sub"), is(equalTo("test@test.com")));
+    }
+
+    @Test
+    void shouldIntrospectUnknownTokenAsInactive() throws Exception {
+        // Given
+        OAuth2RootDir dir = new OAuth2RootDir(mock(TestProxyServer.class), "oauth2");
+
+        // When
+        JSONObject response =
+                dir.handleIntrospect(
+                        introspectionRequest("not-a-real-token", "test-client", "test-secret"));
+
+        // Then
+        assertThat(response.getBoolean("active"), is(equalTo(false)));
+        assertThat(response.has("sub"), is(equalTo(false)));
+    }
+
+    @Test
+    void shouldRejectIntrospectionWithBadClientCredentials() throws Exception {
+        // Given
+        OAuth2RootDir dir = new OAuth2RootDir(mock(TestProxyServer.class), "oauth2");
+        String accessToken =
+                dir.issueTokens("test@test.com", null, false).getString("access_token");
+
+        // When
+        JSONObject response =
+                dir.handleIntrospect(introspectionRequest(accessToken, "test-client", "wrong"));
+
+        // Then
+        assertThat(response.getString("error"), is(equalTo("invalid_client")));
+    }
+
+    private static HttpMessage introspectionRequest(
+            String token, String clientId, String clientSecret) throws Exception {
+        HttpMessage msg = new HttpMessage();
+        msg.setRequestHeader(
+                new HttpRequestHeader(
+                        "POST /introspect HTTP/1.1\r\nHost: authserver.oauth2.zap\r\n\r\n"));
+        msg.getRequestHeader()
+                .setHeader(HttpHeader.CONTENT_TYPE, "application/x-www-form-urlencoded");
+        String basic =
+                Base64.getEncoder()
+                        .encodeToString(
+                                (clientId + ":" + clientSecret).getBytes(StandardCharsets.UTF_8));
+        msg.getRequestHeader().setHeader("Authorization", "Basic " + basic);
+        msg.getRequestBody().setBody("token=" + token);
+        return msg;
+    }
+
+    @Test
+    void shouldTreatExpiredAccessTokenAsInactiveOnIntrospection() throws Exception {
+        // Given - issued with a TTL already in the past
+        OAuth2RootDir dir = new OAuth2RootDir(mock(TestProxyServer.class), "oauth2");
+        String accessToken =
+                dir.issueTokens("test@test.com", null, false, -10).getString("access_token");
+
+        // When
+        JSONObject response =
+                dir.handleIntrospect(
+                        introspectionRequest(accessToken, "test-client", "test-secret"));
+
+        // Then
+        assertThat(response.getBoolean("active"), is(equalTo(false)));
+    }
+
+    @Test
+    void shouldResolveDefaultExpiresInWhenNotRequested() throws Exception {
+        assertThat(OAuth2RootDir.resolveExpiresIn(tokenRequest(null)), is(equalTo(3600)));
+    }
+
+    @Test
+    void shouldResolveRequestedExpiresIn() throws Exception {
+        assertThat(OAuth2RootDir.resolveExpiresIn(tokenRequest("5")), is(equalTo(5)));
+    }
+
+    @Test
+    void shouldFallBackToDefaultExpiresInWhenInvalid() throws Exception {
+        assertThat(OAuth2RootDir.resolveExpiresIn(tokenRequest("not-a-number")), is(equalTo(3600)));
+        assertThat(OAuth2RootDir.resolveExpiresIn(tokenRequest("0")), is(equalTo(3600)));
+        assertThat(OAuth2RootDir.resolveExpiresIn(tokenRequest("-5")), is(equalTo(3600)));
+    }
+
+    @Test
+    void shouldDetectBasicClientAuth() throws Exception {
+        HttpMessage msg = tokenRequest(null);
+        String basic =
+                Base64.getEncoder()
+                        .encodeToString("test-client:test-secret".getBytes(StandardCharsets.UTF_8));
+        msg.getRequestHeader().setHeader("Authorization", "Basic " + basic);
+
+        assertThat(OAuth2RootDir.detectClientAuthMethod(msg), is(equalTo("client_secret_basic")));
+    }
+
+    @Test
+    void shouldDetectPostClientAuth() throws Exception {
+        HttpMessage msg =
+                tokenRequestWithBody(
+                        "grant_type=client_credentials&client_id=test-client&client_secret=test-secret");
+
+        assertThat(OAuth2RootDir.detectClientAuthMethod(msg), is(equalTo("client_secret_post")));
+    }
+
+    @Test
+    void shouldDetectNoneClientAuth() throws Exception {
+        HttpMessage msg =
+                tokenRequestWithBody("grant_type=client_credentials&client_id=test-public-client");
+
+        assertThat(OAuth2RootDir.detectClientAuthMethod(msg), is(equalTo("none")));
+    }
+
+    @Test
+    void shouldSendMalformedBodyWhenSimulatingMalformedError() throws Exception {
+        // Given
+        OAuth2RootDir dir = new OAuth2RootDir(mock(TestProxyServer.class), "oauth2");
+        HttpMessage msg = tokenRequestWithBody("simulate_error=malformed");
+
+        // When
+        boolean handled = dir.handleSimulatedError(msg);
+
+        // Then
+        assertThat(handled, is(equalTo(true)));
+        assertThat(msg.getResponseHeader().getStatusCode(), is(equalTo(200)));
+        assertThat(msg.getResponseBody().toString(), is(equalTo("{not-json")));
+    }
+
+    @Test
+    void shouldSend500WhenSimulatingServerError() throws Exception {
+        // Given
+        TestProxyServer server = mock(TestProxyServer.class);
+        OAuth2RootDir dir = new OAuth2RootDir(server, "oauth2");
+        HttpMessage msg = tokenRequestWithBody("simulate_error=server_error");
+
+        // When
+        boolean handled = dir.handleSimulatedError(msg);
+
+        // Then
+        assertThat(handled, is(equalTo(true)));
+        ArgumentCaptor<JSON> jsonCaptor = ArgumentCaptor.forClass(JSON.class);
+        verify(server)
+                .setJsonResponse(eq("500 Internal Server Error"), jsonCaptor.capture(), eq(msg));
+        JSONObject body = (JSONObject) jsonCaptor.getValue();
+        assertThat(body.getString("error"), is(equalTo("server_error")));
+    }
+
+    @Test
+    void shouldNotSimulateErrorWhenParamAbsent() throws Exception {
+        OAuth2RootDir dir = new OAuth2RootDir(mock(TestProxyServer.class), "oauth2");
+        assertThat(dir.handleSimulatedError(tokenRequest(null)), is(equalTo(false)));
+    }
+
+    @Test
+    void shouldRejectRefreshTokenWhenSimulatingRefreshInvalidGrant() throws Exception {
+        // Given
+        OAuth2RootDir dir = new OAuth2RootDir(mock(TestProxyServer.class), "oauth2");
+        String refreshToken =
+                dir.issueTokens("test@test.com", null, true).getString("refresh_token");
+
+        // When
+        JSONObject response =
+                dir.handleRefreshTokenGrant(
+                        tokenRequestWithBody(
+                                "grant_type=refresh_token&refresh_error=invalid_grant&refresh_token="
+                                        + refreshToken),
+                        "test-client",
+                        "test-secret");
+
+        // Then
+        assertThat(response.getString("error"), is(equalTo("invalid_grant")));
+        // The token is consumed, as if revoked.
+        JSONObject replay =
+                dir.handleRefreshTokenGrant(
+                        refreshTokenRequest(refreshToken), "test-client", "test-secret");
+        assertThat(replay.getString("error"), is(equalTo("invalid_grant")));
+    }
+
+    @Test
+    void shouldSend500AndKeepRefreshTokenWhenSimulatingRefreshServerError() throws Exception {
+        // Given
+        TestProxyServer server = mock(TestProxyServer.class);
+        OAuth2RootDir dir = new OAuth2RootDir(server, "oauth2");
+        String refreshToken =
+                dir.issueTokens("test@test.com", null, true).getString("refresh_token");
+        HttpMessage msg =
+                tokenRequestWithBody(
+                        "grant_type=refresh_token&refresh_error=server_error&refresh_token="
+                                + refreshToken);
+
+        // When
+        boolean handled = dir.handleSimulatedRefreshServerError(msg, "refresh_token");
+
+        // Then
+        assertThat(handled, is(equalTo(true)));
+        ArgumentCaptor<JSON> jsonCaptor = ArgumentCaptor.forClass(JSON.class);
+        verify(server)
+                .setJsonResponse(eq("500 Internal Server Error"), jsonCaptor.capture(), eq(msg));
+        assertThat(
+                ((JSONObject) jsonCaptor.getValue()).getString("error"),
+                is(equalTo("server_error")));
+        // The refresh token can still be used, once the error is no longer simulated.
+        JSONObject retry =
+                dir.handleRefreshTokenGrant(
+                        refreshTokenRequest(refreshToken), "test-client", "test-secret");
+        assertThat(retry.has("error"), is(equalTo(false)));
+    }
+
+    @Test
+    void shouldNotSimulateRefreshServerErrorForOtherGrantsOrWhenAbsent() throws Exception {
+        // Given
+        OAuth2RootDir dir = new OAuth2RootDir(mock(TestProxyServer.class), "oauth2");
+        HttpMessage msg = tokenRequestWithBody("refresh_error=server_error");
+        // When / Then
+        assertThat(dir.handleSimulatedRefreshServerError(msg, "password"), is(equalTo(false)));
+        assertThat(
+                dir.handleSimulatedRefreshServerError(tokenRequest(null), "refresh_token"),
+                is(equalTo(false)));
+        assertThat(
+                dir.handleSimulatedRefreshServerError(
+                        tokenRequestWithBody("refresh_error=invalid_grant"), "refresh_token"),
+                is(equalTo(false)));
+    }
+
+    @Test
+    void shouldRevokeAccessTokenIssuedByRefreshWhenSimulatingRevokeRefreshed() throws Exception {
+        // Given
+        OAuth2RootDir dir = new OAuth2RootDir(mock(TestProxyServer.class), "oauth2");
+        JSONObject initial = dir.issueTokens("test@test.com", null, true);
+        String initialAccessToken = initial.getString("access_token");
+
+        // When
+        JSONObject refreshed =
+                dir.handleRefreshTokenGrant(
+                        tokenRequestWithBody(
+                                "grant_type=refresh_token&revoke_refreshed=true&refresh_token="
+                                        + initial.getString("refresh_token")),
+                        "test-client",
+                        "test-secret");
+
+        // Then - the token endpoint reports success, but the new token is not usable
+        assertThat(refreshed.has("error"), is(equalTo(false)));
+        assertThat(
+                dir.handleIntrospect(
+                                introspectionRequest(
+                                        refreshed.getString("access_token"),
+                                        "test-client",
+                                        "test-secret"))
+                        .getBoolean("active"),
+                is(equalTo(false)));
+        // The token it replaced and the next refresh token are not affected.
+        assertThat(
+                dir.handleIntrospect(
+                                introspectionRequest(
+                                        initialAccessToken, "test-client", "test-secret"))
+                        .getBoolean("active"),
+                is(equalTo(true)));
+        JSONObject next =
+                dir.handleRefreshTokenGrant(
+                        refreshTokenRequest(refreshed.getString("refresh_token")),
+                        "test-client",
+                        "test-secret");
+        assertThat(
+                dir.handleIntrospect(
+                                introspectionRequest(
+                                        next.getString("access_token"),
+                                        "test-client",
+                                        "test-secret"))
+                        .getBoolean("active"),
+                is(equalTo(true)));
+    }
+
+    @Test
+    void shouldServeTheOAuth2DomainsWithHandlers() {
+        // Given
+        TestProxyServer server = mock(TestProxyServer.class);
+        // When
+        new OAuth2RootDir(server, "oauth2");
+        // Then
+        verify(server).addDomainHandler(eq("https://authserver.oauth2.zap"), any());
+        verify(server).addDomainHandler(eq("https://api.oauth2.zap"), any());
+        verify(server).addDomainHandler(eq("https://app.oauth2.zap"), any());
+    }
+
+    @Test
+    void shouldHandleTokenRequestsToAuthServer() throws Exception {
+        // Given
+        TestProxyServer server = mock(TestProxyServer.class);
+        OAuth2RootDir dir = new OAuth2RootDir(server, "oauth2");
+        HttpMessage msg =
+                tokenRequestWithBody(
+                        "grant_type=client_credentials&client_id=test-client&client_secret=test-secret");
+
+        // When
+        dir.handleAuthServerRequest(msg);
+
+        // Then
+        ArgumentCaptor<JSON> jsonCaptor = ArgumentCaptor.forClass(JSON.class);
+        verify(server).setJsonResponse(eq("200 OK"), jsonCaptor.capture(), eq(msg));
+        assertThat(((JSONObject) jsonCaptor.getValue()).has("access_token"), is(equalTo(true)));
+    }
+
+    @Test
+    void shouldHandleIntrospectionRequestsToAuthServer() throws Exception {
+        // Given
+        TestProxyServer server = mock(TestProxyServer.class);
+        OAuth2RootDir dir = new OAuth2RootDir(server, "oauth2");
+        String accessToken =
+                dir.issueTokens("test@test.com", null, false).getString("access_token");
+        HttpMessage msg = introspectionRequest(accessToken, "test-client", "test-secret");
+
+        // When
+        dir.handleAuthServerRequest(msg);
+
+        // Then
+        ArgumentCaptor<JSON> jsonCaptor = ArgumentCaptor.forClass(JSON.class);
+        verify(server).setJsonResponse(eq("200 OK"), jsonCaptor.capture(), eq(msg));
+        assertThat(((JSONObject) jsonCaptor.getValue()).getBoolean("active"), is(equalTo(true)));
+    }
+
+    @Test
+    void shouldNotRespondToOtherRequestsToAuthServerOrApp() throws Exception {
+        // Given
+        TestProxyServer server = mock(TestProxyServer.class);
+        OAuth2RootDir dir = new OAuth2RootDir(server, "oauth2");
+        HttpMessage other =
+                new HttpMessage(
+                        new HttpRequestHeader(
+                                "GET /other HTTP/1.1\r\nHost: authserver.oauth2.zap\r\n\r\n"));
+        HttpMessage notGetToApp =
+                new HttpMessage(
+                        new HttpRequestHeader(
+                                "POST /callback.html HTTP/1.1\r\nHost: app.oauth2.zap\r\n\r\n"));
+
+        // When
+        dir.handleAuthServerRequest(other);
+        dir.handleAppRequest(notGetToApp);
+
+        // Then - the server responds with a not found
+        assertThat(other.getResponseHeader().isEmpty(), is(equalTo(true)));
+        assertThat(notGetToApp.getResponseHeader().isEmpty(), is(equalTo(true)));
+        verify(server, never()).setJsonResponse(any(), any(JSON.class), any());
+    }
+
+    @Test
+    void shouldOmitExpiresInFromTokenResponseWhenRequested() throws Exception {
+        // Given
+        TestProxyServer server = mock(TestProxyServer.class);
+        OAuth2RootDir dir = new OAuth2RootDir(server, "oauth2");
+        HttpMessage msg =
+                tokenRequestWithBody(
+                        "grant_type=client_credentials&client_id=test-client&client_secret=test-secret"
+                                + "&expires_in=10&omit_expires_in=true");
+
+        // When
+        dir.handleAuthServerRequest(msg);
+
+        // Then
+        ArgumentCaptor<JSON> jsonCaptor = ArgumentCaptor.forClass(JSON.class);
+        verify(server).setJsonResponse(eq("200 OK"), jsonCaptor.capture(), eq(msg));
+        JSONObject response = (JSONObject) jsonCaptor.getValue();
+        assertThat(response.has("access_token"), is(equalTo(true)));
+        assertThat(response.has("expires_in"), is(equalTo(false)));
+    }
+
+    @Test
+    void shouldIncludeExpiresInInTokenResponseByDefault() throws Exception {
+        // Given
+        TestProxyServer server = mock(TestProxyServer.class);
+        OAuth2RootDir dir = new OAuth2RootDir(server, "oauth2");
+        HttpMessage msg =
+                tokenRequestWithBody(
+                        "grant_type=client_credentials&client_id=test-client&client_secret=test-secret"
+                                + "&expires_in=10");
+
+        // When
+        dir.handleAuthServerRequest(msg);
+
+        // Then
+        ArgumentCaptor<JSON> jsonCaptor = ArgumentCaptor.forClass(JSON.class);
+        verify(server).setJsonResponse(eq("200 OK"), jsonCaptor.capture(), eq(msg));
+        assertThat(((JSONObject) jsonCaptor.getValue()).getInt("expires_in"), is(equalTo(10)));
+    }
+
+    @Test
+    void shouldRevokeOnlyTheNumberOfRefreshedTokensRequested() throws Exception {
+        // Given
+        OAuth2RootDir dir = new OAuth2RootDir(mock(TestProxyServer.class), "oauth2");
+        String refreshToken =
+                dir.issueTokens("test@test.com", null, true).getString("refresh_token");
+
+        // When
+        JSONObject first = refreshWithRevoke(dir, refreshToken, "2");
+        JSONObject second = refreshWithRevoke(dir, first.getString("refresh_token"), "2");
+        JSONObject third = refreshWithRevoke(dir, second.getString("refresh_token"), "2");
+
+        // Then - the first 2 tokens issued by refreshing are revoked, but not the others
+        assertThat(isActive(dir, first), is(equalTo(false)));
+        assertThat(isActive(dir, second), is(equalTo(false)));
+        assertThat(isActive(dir, third), is(equalTo(true)));
+    }
+
+    @Test
+    void shouldRevokeJustTheFirstRefreshedTokenWhenRevokeRefreshedIsOne() throws Exception {
+        // Given
+        OAuth2RootDir dir = new OAuth2RootDir(mock(TestProxyServer.class), "oauth2");
+        JSONObject initial = dir.issueTokens("test@test.com", null, true);
+
+        // When
+        JSONObject first = refreshWithRevoke(dir, initial.getString("refresh_token"), "1");
+        JSONObject second = refreshWithRevoke(dir, first.getString("refresh_token"), "1");
+
+        // Then
+        assertThat(isActive(dir, initial), is(equalTo(true)));
+        assertThat(isActive(dir, first), is(equalTo(false)));
+        assertThat(isActive(dir, second), is(equalTo(true)));
+    }
+
+    @Test
+    void shouldRevokeAllRefreshedTokensWhenRevokeRefreshedIsTrue() throws Exception {
+        // Given
+        OAuth2RootDir dir = new OAuth2RootDir(mock(TestProxyServer.class), "oauth2");
+        String refreshToken =
+                dir.issueTokens("test@test.com", null, true).getString("refresh_token");
+
+        // When
+        JSONObject first = refreshWithRevoke(dir, refreshToken, "true");
+        JSONObject second = refreshWithRevoke(dir, first.getString("refresh_token"), "true");
+
+        // Then
+        assertThat(isActive(dir, first), is(equalTo(false)));
+        assertThat(isActive(dir, second), is(equalTo(false)));
+    }
+
+    @Test
+    void shouldCountRefreshedTokensPerClientAndStartAgainWhenReset() throws Exception {
+        // Given
+        OAuth2RootDir dir = new OAuth2RootDir(mock(TestProxyServer.class), "oauth2");
+        JSONObject first =
+                refreshWithRevoke(
+                        dir,
+                        dir.issueTokens("test@test.com", null, true).getString("refresh_token"),
+                        "1");
+        assertThat(isActive(dir, first), is(equalTo(false)));
+
+        // When
+        dir.reset();
+        JSONObject afterReset =
+                refreshWithRevoke(
+                        dir,
+                        dir.issueTokens("test@test.com", null, true).getString("refresh_token"),
+                        "1");
+
+        // Then - the first token after the reset is the first again
+        assertThat(isActive(dir, afterReset), is(equalTo(false)));
+    }
+
+    @Test
+    void shouldResolveRevokeRefreshed() throws Exception {
+        assertThat(OAuth2RootDir.resolveRevokeRefreshed(tokenRequest(null)), is(equalTo(0)));
+        assertThat(
+                OAuth2RootDir.resolveRevokeRefreshed(tokenRequestWithBody("revoke_refreshed=true")),
+                is(equalTo(Integer.MAX_VALUE)));
+        assertThat(
+                OAuth2RootDir.resolveRevokeRefreshed(tokenRequestWithBody("revoke_refreshed=3")),
+                is(equalTo(3)));
+        for (String invalid : new String[] {"soon", "-1", "0", "false", ""}) {
+            assertThat(
+                    invalid,
+                    OAuth2RootDir.resolveRevokeRefreshed(
+                            tokenRequestWithBody("revoke_refreshed=" + invalid)),
+                    is(equalTo(0)));
+        }
+    }
+
+    private static JSONObject refreshWithRevoke(
+            OAuth2RootDir dir, String refreshToken, String revokeRefreshed) throws Exception {
+        return dir.handleRefreshTokenGrant(
+                tokenRequestWithBody(
+                        "grant_type=refresh_token&revoke_refreshed="
+                                + revokeRefreshed
+                                + "&refresh_token="
+                                + refreshToken),
+                "test-client",
+                "test-secret");
+    }
+
+    private static boolean isActive(OAuth2RootDir dir, JSONObject tokens) throws Exception {
+        return dir.handleIntrospect(
+                        introspectionRequest(
+                                tokens.getString("access_token"), "test-client", "test-secret"))
+                .getBoolean("active");
+    }
+
+    @Test
+    void shouldNotFailBeforeTheTokensAllowedByFailAfterAreIssued() throws Exception {
+        // Given
+        OAuth2RootDir dir = new OAuth2RootDir(mock(TestProxyServer.class), "oauth2");
+        HttpMessage msg = tokenRequestWithBody("grant_type=password&fail_after=2");
+        // When / Then
+        assertThat(dir.handleSimulatedFailureAfter(msg, "test-client"), is(equalTo(false)));
+        dir.recordTokenIssued("test-client");
+        assertThat(dir.handleSimulatedFailureAfter(msg, "test-client"), is(equalTo(false)));
+    }
+
+    @Test
+    void shouldSend500OnceTheTokensAllowedByFailAfterAreIssued() throws Exception {
+        // Given
+        TestProxyServer server = mock(TestProxyServer.class);
+        OAuth2RootDir dir = new OAuth2RootDir(server, "oauth2");
+        HttpMessage msg = tokenRequestWithBody("grant_type=password&fail_after=2");
+        dir.recordTokenIssued("test-client");
+        dir.recordTokenIssued("test-client");
+
+        // When
+        boolean handled = dir.handleSimulatedFailureAfter(msg, "test-client");
+
+        // Then
+        assertThat(handled, is(equalTo(true)));
+        verify(server).setJsonResponse(eq("500 Internal Server Error"), any(JSON.class), eq(msg));
+    }
+
+    @Test
+    void shouldCountTokensIssuedByFailAfterPerClient() throws Exception {
+        // Given
+        OAuth2RootDir dir = new OAuth2RootDir(mock(TestProxyServer.class), "oauth2");
+        HttpMessage msg = tokenRequestWithBody("grant_type=password&fail_after=1");
+        dir.recordTokenIssued("test-client");
+        // When / Then
+        assertThat(dir.handleSimulatedFailureAfter(msg, "test-client"), is(equalTo(true)));
+        assertThat(dir.handleSimulatedFailureAfter(msg, "test-public-client"), is(equalTo(false)));
+    }
+
+    @Test
+    void shouldFailImmediatelyWhenFailAfterIsZero() throws Exception {
+        // Given
+        OAuth2RootDir dir = new OAuth2RootDir(mock(TestProxyServer.class), "oauth2");
+        HttpMessage msg = tokenRequestWithBody("grant_type=password&fail_after=0");
+        // When / Then
+        assertThat(dir.handleSimulatedFailureAfter(msg, "test-client"), is(equalTo(true)));
+    }
+
+    @Test
+    void shouldIgnoreFailAfterWhenAbsentOrInvalid() throws Exception {
+        // Given
+        OAuth2RootDir dir = new OAuth2RootDir(mock(TestProxyServer.class), "oauth2");
+        dir.recordTokenIssued("test-client");
+        // When / Then
+        assertThat(
+                dir.handleSimulatedFailureAfter(tokenRequest(null), "test-client"),
+                is(equalTo(false)));
+        assertThat(
+                dir.handleSimulatedFailureAfter(
+                        tokenRequestWithBody("grant_type=password&fail_after=soon"), "test-client"),
+                is(equalTo(false)));
+        assertThat(
+                dir.handleSimulatedFailureAfter(
+                        tokenRequestWithBody("grant_type=password&fail_after=-1"), "test-client"),
+                is(equalTo(false)));
+    }
+
+    @Test
+    void shouldForgetIssuedTokensAndCountsWhenReset() throws Exception {
+        // Given
+        OAuth2RootDir dir = new OAuth2RootDir(mock(TestProxyServer.class), "oauth2");
+        JSONObject tokens = dir.issueTokens("test@test.com", null, true);
+        dir.recordTokenIssued("test-client");
+        HttpMessage failAfterOne = tokenRequestWithBody("grant_type=password&fail_after=1");
+        assertThat(dir.handleSimulatedFailureAfter(failAfterOne, "test-client"), is(equalTo(true)));
+
+        // When
+        dir.reset();
+
+        // Then - the tokens issued before are unknown
+        assertThat(
+                dir.handleIntrospect(
+                                introspectionRequest(
+                                        tokens.getString("access_token"),
+                                        "test-client",
+                                        "test-secret"))
+                        .getBoolean("active"),
+                is(equalTo(false)));
+        assertThat(
+                dir.handleRefreshTokenGrant(
+                                refreshTokenRequest(tokens.getString("refresh_token")),
+                                "test-client",
+                                "test-secret")
+                        .getString("error"),
+                is(equalTo("invalid_grant")));
+        // And the number of tokens issued starts again
+        assertThat(
+                dir.handleSimulatedFailureAfter(failAfterOne, "test-client"), is(equalTo(false)));
+    }
+
+    private static HttpMessage tokenRequest(String expiresIn) throws Exception {
+        String body = "grant_type=client_credentials";
+        if (expiresIn != null) {
+            body += "&expires_in=" + expiresIn;
+        }
+        return tokenRequestWithBody(body);
+    }
+
+    private static HttpMessage tokenRequestWithBody(String body) throws Exception {
+        HttpMessage msg = new HttpMessage();
+        msg.setRequestHeader(
+                new HttpRequestHeader(
+                        "POST /token HTTP/1.1\r\nHost: authserver.oauth2.zap\r\n\r\n"));
+        msg.getRequestHeader()
+                .setHeader(HttpHeader.CONTENT_TYPE, "application/x-www-form-urlencoded");
+        msg.getRequestBody().setBody(body);
+        return msg;
+    }
+}

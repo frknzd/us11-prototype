@@ -1,0 +1,93 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<TITLE>パッシブスキャナーAPI</TITLE>
+</HEAD>
+<BODY>
+	<H1>パッシブスキャナーAPI</H1>
+	APIに以下の操作が追加されます：
+
+	<h3>アクション</h3>
+	<ul>
+		<li>
+			clearQueue: パッシブスキャンキューをクリアします
+		</li>
+		<li>
+			disableAllScanners: すべてのパッシブスキャンルールを無効にします
+		</li>
+		<li>
+			disableAllTags: すべてのパッシブスキャンタグを無効にします
+		</li>
+		<li>
+			disableScanners (ids*): パッシブスキャンルールを無効にします
+			<ul>
+				<li>ids: スキャンルールIDをカンマで区切ったリスト</li>
+			</ul>
+		</li>
+		<li>
+			enableAllScanners: すべてのパッシブスキャンルールを有効にします
+		</li>
+		<li>
+			enableAllTags: すべてのパッシブスキャンタグを有効にします
+		</li>
+		<li>
+			enableScanners (ids*): パッシブスキャンルールを有効にします
+			<ul>
+				<li>ids: スキャンルールIDをカンマで区切ったリスト</li>
+			</ul>
+		</li>
+		<li>
+			setEnabled (enabled*): パッシブスキャンが有効であるかどうかを設定します。(注: 有効状態は保持されません)
+			<ul>
+				<li>enabled: 有効状態 (true または false)</li>
+			</ul>
+		</li>
+		<li>
+			setMaxAlertsPerRule (maxAlerts*): パッシブスキャンルールが発行できる最大アラート数を設定します
+			<ul>
+				<li>maxAlerts: 最大アラート数</li>
+			</ul>
+		</li>
+		<li>
+			setMaxBodySizeInBytes (maxSize*): パッシブスキャナーがスキャンする最大ボディサイズをバイト単位で設定します
+			<ul>
+				<li>maxSize: 最大サイズ (バイト単位)、0は未設定を意味します</li>
+			</ul>
+		</li>
+		<li>
+			setScanOnlyInScope (onlyInScope*): パッシブスキャンをスコープ内のメッセージに対してのみ実行するかどうかを設定します
+			<ul>
+				<li>onlyInScope: スキャン状態 (true または false)</li>
+			</ul>
+		</li>
+		<li>
+			setScannerAlertThreshold (id* alertThreshold*): パッシブスキャンルールのアラートしきい値を設定します
+			<ul>
+				<li>id: スキャンルールのID</li>
+				<li>alertThreshold: アラートしきい値: OFF、DEFAULT、LOW、MEDIUM、HIGH</li>
+			</ul>
+		</li>
+	</ul>
+
+	<h3>ビュー</h3>
+	<ul>
+		<li>currentTasks: 現在実行中のパッシブスキャンタスクに関する情報 (存在する場合) を表示します</li>
+		<li>maxAlertsPerRule: パッシブスキャンルールが発行すべき最大アラート数を取得します</li>
+		<li>maxBodySizeInBytes: パッシブスキャナーがスキャンする最大ボディサイズをバイト単位で取得します</li>
+		<li>recordsToScan: パッシブスキャナーが今後スキャンする必要のあるレコード数</li>
+		<li>scanOnlyInScope: パッシブスキャンをスコープ内のメッセージに対してのみ実行するかどうかを伝えます</li>
+		<li>scanners: すべてのパッシブスキャンルールを、ID、名前、有効状態、およびアラートしきい値とともにリスト表示します</li>
+	</ul>
+
+	<H2>関連情報</H2>
+	<table>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td><a href="pscan.html">パッシブスキャナー</a></td>
+			<td>パッシブスキャナーアドオンの概要</td>
+		</tr>
+	</table>
+
+</BODY>
+</HTML>

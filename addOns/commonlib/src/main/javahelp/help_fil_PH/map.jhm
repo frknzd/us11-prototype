@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE map
+  PUBLIC "-//Sun Microsystems Inc.//DTD JavaHelp Map Version 1.0//EN"
+         "http://java.sun.com/products/javahelp/map_1_0.dtd">
+
+<map version="1.0">
+    <mapID target="commonlib" url="contents/commonlib.html" />
+    <mapID target="commonlib.output.panel" url="contents/output-panel.html" />
+    <mapID target="commonlib.alert.tags" url="contents/alerttags.html" />
+    <mapID target="commonlib.alert.generatefixprompt" url="contents/generate-fix-prompt.html" />
+    <mapID target="commonlib.binlist" url="contents/binlist.html" />
+</map>

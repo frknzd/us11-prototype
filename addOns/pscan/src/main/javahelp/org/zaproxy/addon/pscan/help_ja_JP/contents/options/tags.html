@@ -1,0 +1,46 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<TITLE>
+パッシブスキャンタグ
+</TITLE>
+</HEAD>
+<BODY>
+<H1>パッシブスキャンタグ</H1>
+<p>
+この画面では、パッシブスキャナーによって追加されるタグを設定できます。
+</p>
+対応するボタンを使用して、タグの追加、変更、削除を行うことができます。
+
+<H2>タグの補間</H2>
+タグの作成と内容に柔軟性を持たせるために、ユーザーがキャプチャグループを持つ正規表現を指定することが可能です。これは、結果として生成されるタグ内のグループ識別子 (例: $1) を置換するために使用されます。
+<p>
+例として、タグは次のように定義できます：
+<table border=1>
+  <tr>
+    <th>フィールド</th><th>値</th><th>注</th>
+  </tr>
+  <tr>
+    <td>Name:</td><td>Test</td><td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td>Tag:</td><td>$1-SOMETAG</td><td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td>Response Body Regex:</td><td>(\d{3})</td><td>キャプチャグループ (丸括弧) を使用して、3桁の文字列を検索します。</td>
+  </tr>
+</table>
+<b>結果:</b> レスポンスボディの内容で3桁の文字列がパッシブに識別された場合 (正規表現が一致すると)、メッセージには「123-SOMETAG」、「345-SOMETAG」などのタグが付与されます。
+
+<H2>関連情報</H2>
+<table>
+	<tr>
+		<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+		<td><a href="../pscan.html">パッシブスキャナー</a></td>
+		<td>パッシブスキャナーアドオンの概要</td>
+	</tr>
+</table>
+
+</BODY>
+</HTML>

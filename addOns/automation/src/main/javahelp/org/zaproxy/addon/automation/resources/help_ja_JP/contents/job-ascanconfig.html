@@ -1,0 +1,56 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<TITLE>
+自動化フレームワーク - activeScan-config ジョブ
+</TITLE>
+</HEAD>
+<BODY>
+<H1>自動化フレームワーク - activeScan-config ジョブ</H1>
+
+このジョブは、カスタムアクティブスキャン (例: シーケンス) のために、アクティブスキャナーの各種設定を行います。
+
+<H2>YAML</H2>
+
+<pre>
+  - type: activeScan-config                # アクティブスキャナーの設定を構成します。
+    parameters:
+      maxRuleDurationInMins:               # Int: 個々のルールが実行を許可される最大時間 (分)、デフォルト: 0 (制限なし)
+      maxScanDurationInMins:               # Int: アクティブスキャナーが実行を許可される最大時間 (分)、デフォルト: 0 (制限なし)
+      maxAlertsPerRule:                    # Int: ルールごとに発生させるアラートの最大数、デフォルト: 0 (制限なし)
+      defaultPolicy:                       # 文字列: 使用するデフォルトスキャンポリシーの名前、デフォルト: Default Policy
+      handleAntiCSRFTokens:                # Bool: 設定されている場合、Anti-CSRFトークンを自動的に処理します、デフォルト: true
+      injectPluginIdInHeader:              # Bool: 設定されている場合、関連するルールIDが各リクエストの X-ZAP-Scan-ID ヘッダーに挿入されます、デフォルト: false
+      threadPerHost:                       # Int: ホストごとの最大スレッド数、デフォルト: 2 * 利用可能なプロセッサーコア数
+    inputVectors:                          # アクティブスキャン中に使用されるインプットベクター。
+      urlQueryStringAndDataDrivenNodes:    # クエリパラメータとデータ駆動型ノード (DDN) のスキャンを設定します。
+         enabled:                          # Bool: クエリパラメータとDDNのスキャンを有効化するかどうか。デフォルト: true
+         addParam:                         # Bool: クエリパラメータが存在しない場合にクエリパラメータを追加するかどうか。デフォルト: false
+         odata:                            # Bool: ODataクエリフィルタをスキャンするかどうか。デフォルト: true
+      postData:                            # リクエストボディのスキャンを設定します。
+        enabled:                           # Bool: POSTデータスキャンを有効にするかどうか。デフォルト: true
+        multiPartFormData:                 # Bool: マルチパートフォームデータボディをスキャンするかどうか。デフォルト: true
+        xml:                               # Bool: XMLボディをスキャンするかどうか。デフォルト: true
+        json:                              # JSONボディのスキャンを設定します。
+          enabled:                         # Bool: JSONスキャンを有効にするかどうか。デフォルト: true
+          scanNullValues:                  # Bool: null値をスキャンするかどうか。デフォルト: false
+        googleWebToolkit:                  # Bool: GWTスキャンを有効にするかどうか。デフォルト: false
+        directWebRemoting:                 # Bool: DWRスキャンを有効にするかどうか。デフォルト: false
+      urlPath:                             # Bool: URLパスセグメントをスキャンするかどうか。デフォルト: false
+      httpHeaders:                         # HTTPヘッダーのスキャンを設定します。
+        enabled:                           # Bool: HTTPヘッダーのスキャンを有効にするかどうか。デフォルト: false
+        allRequests:                       # Bool: 設定されている場合、パラメーターを含まないリクエストのヘッダーがスキャンされます。デフォルト: false
+      cookieData:                          # クッキーのスキャンを設定します。
+        enabled:                           # Bool: クッキーのスキャンを有効にするかどうか。デフォルト: false
+        encodeCookieValues:                # Bool: クッキー値をエンコードするかどうか。デフォルト: false
+      scripts:                             # Bool: インプットベクタースクリプトを使用するかどうか。デフォルト: true
+    excludePaths:                          # 除外する正規表現の任意のリスト
+    enabled:                           # Bool: falseに設定されている場合、ジョブは実行されません、デフォルト: true
+    alwaysRun:                         # Bool: 設定されジョブが有効な場合、プランが早期に終了しても実行されます、デフォルト: false
+</pre>
+
+注: 'excludePaths' は、既存のセッションの「スキャナーから除外」パスをすべて上書きします。
+
+</BODY>
+</HTML>
+

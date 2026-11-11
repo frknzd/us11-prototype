@@ -1,0 +1,677 @@
+@startuml US11 class diagram
+' US11 REST verification, class diagram v0.1: CHANGES ONLY on top of "US10 class diagram v3".
+' Green = new class, yellow <<changed>> = US10 class with only its new or changed members,
+' white with no members = unchanged US10 class drawn for context. Rules: US11 specification.md.
+
+title US11 class diagram (changes on top of US10 v3)
+
+top to bottom direction
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI"
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 55
+skinparam ranksep 65
+skinparam ArrowColor #555555
+skinparam class {
+    BackgroundColor white
+    BorderColor #999999
+    HeaderBackgroundColor white
+}
+skinparam package {
+    BackgroundColor #F7F7F7
+    BorderColor #BBBBBB
+    FontStyle normal
+    FontColor #555555
+    Style rectangle
+}
+skinparam note {
+    BackgroundColor #FFF4DA
+    BorderColor #D8C9A3
+}
+hide circle
+hide empty members
+
+' ============================================================ Swing and ZAP (existing)
+package "Java Swing and ZAP (existing, context only)" as ext {
+    class JPanel {
+    }
+    class JDialog {
+    }
+    abstract class AbstractTableModel <<abstract>> {
+    }
+    class HttpMessage {
+    }
+}
+
+' ============================================================ ZAP adapter
+package "ZAP adapter layer (input), org.zaproxy.addon.restextraction" as adapter {
+    class RestTrafficListener <<changed>> #FFF8DC {
+        - toApiCall(msg: HttpMessage): ApiCall
+        - toRequestData(msg: HttpMessage): RequestData
+        - {static} bodyOf(header: HttpHeader, body: HttpBody): String
+    }
+}
+
+' ============================================================ Presentation
+package "Presentation layer (output), org.zaproxy.addon.restextraction.ui" as ui {
+    class RestExtractionPanel <<changed>> #FFF8DC {
+        - specificationPanel: SpecificationPanel
+        - checkWriter: CheckWriter
+        - onlyInvalidBox: JCheckBox
+        --
+        - onSelectNamespace(): void
+        - onSelectCall(): void
+        - onFilter(): void
+        - onShowUnmatched(): void
+        - labelOf(node: DefaultMutableTreeNode): String
+    }
+    class CallTableModel <<changed>> #FFF8DC {
+        ' removed: + matches(row: int, method: HttpMethod, text: String): boolean
+        + setEndpoints(endpoints: List<EndpointReport>): void
+        + getVerdictAt(row: int): Verdict
+        + matches(row: int, method: HttpMethod, text: String, onlyInvalid: boolean): boolean
+        + getValueAt(row: int, column: int): Object
+    }
+    class ApiDocumentationWriter <<changed>> #FFF8DC {
+        ' removed: - writeCall(recorded: RecordedCall): String
+        - checkWriter: CheckWriter
+        --
+        - writeEndpoint(endpoint: EndpointReport): String
+        - writeSpec(spec: EndpointSpec): String
+        - writeCall(call: RecordedCall, verdict: Verdict): String
+    }
+    class CheckWriter #E8F5E9 {
+        + lines(verdict: Verdict): List<String>
+        + toHtml(verdict: Verdict): String
+        + mark(verdict: Verdict): String
+        - message(violation: Violation): String
+        - message(warning: Warning): String
+        - message(check: Check): String
+    }
+    class SpecificationPanel #E8F5E9 {
+        - extractor: RestExtractor
+        - namespace: ApiNamespace
+        - template: String
+        --
+        + SpecificationPanel(extractor: RestExtractor)
+        + showEndpoint(ns: ApiNamespace, template: String): void
+        - onKindSelected(): void
+        - onSave(): void
+        - onEdit(): void
+        - onRemove(): void
+    }
+    class SpecItemForm #E8F5E9 {
+        - kind: SpecItemKind
+        - values: Map<SpecField, String>
+        --
+        + SpecItemForm(template: String)
+        + setKind(kind: SpecItemKind): void
+        + visibleFields(): List<SpecField>
+        + set(field: SpecField, value: String): void
+        + load(item: SpecItem): void
+        + toItem(): SpecItem
+    }
+    class SpecItemTableModel #E8F5E9 {
+        - rows: List<SpecItem>
+        --
+        + setSpec(spec: EndpointSpec): void
+        + getItemAt(row: int): SpecItem
+        + getRowCount(): int
+        + getColumnCount(): int
+        + getValueAt(row: int, column: int): Object
+    }
+    enum SpecField <<enumeration>> #E8F5E9 {
+        METHOD
+        MEDIA_TYPE
+        NAME
+        TYPE
+        MIN
+        MAX
+        REQUIRED
+    }
+    class UnmatchedPathsPanel #E8F5E9 {
+        - extractor: RestExtractor
+        - namespace: ApiNamespace
+        --
+        + UnmatchedPathsPanel(extractor: RestExtractor, ns: ApiNamespace)
+        + refresh(): void
+        - onAddPattern(): void
+        - onClear(): void
+    }
+    class PatternBuilderDialog #E8F5E9 {
+        - draft: PatternDraft
+        --
+        + PatternBuilderDialog(extractor: RestExtractor, ns: ApiNamespace, path: UrlPath)
+        - onToggle(index: int): void
+        - onRename(index: int, name: String): void
+        - onAdd(): void
+    }
+}
+
+note as N_SpecItem
+    **SpecItem** (in ""model"", see below) is what one row of the
+    Specification tab shows and what the form edits: kind, method,
+    name, type, range, required. ""SpecItemForm.toItem"" checks the
+    fields of its kind; the panel then calls
+    ""extractor.addSpecItem(ns, template, item)"" (SPEC-S14).
+end note
+
+' ============================================================ Domain
+package "Domain layer (org.zaproxy.addon.restextraction.model): no ZAP or Swing imports" as model {
+
+    ' ---------------------------------------- US10 classes touched by US11
+    class RestExtractor <<changed>> #FFF8DC {
+        + addSpecItem(ns: ApiNamespace, template: String, item: SpecItem): void
+        + removeSpecItem(ns: ApiNamespace, template: String, item: SpecItem): void
+        + getUnmatchedPaths(ns: ApiNamespace): Map<UrlPath, Integer>
+        + clearUnmatchedPaths(ns: ApiNamespace): void
+    }
+    class ApiNamespace <<changed>> #FFF8DC {
+        - unmatched: UnmatchedPaths
+        --
+        + record(call: ApiCall): boolean
+        + clear(): void
+        + addSpecItem(template: String, item: SpecItem): void
+        + removeSpecItem(template: String, item: SpecItem): void
+        + getUnmatchedPaths(): UnmatchedPaths
+    }
+    class Endpoint <<changed>> #FFF8DC {
+        - spec: EndpointSpec {volatile}
+        - verdicts: Map<RecordedCall, Verdict>
+        --
+        + record(call: ApiCall, path: UrlPath): boolean
+        + getSpec(): EndpointSpec
+        + addSpecItem(item: SpecItem): void
+        + removeSpecItem(item: SpecItem): void
+        + createReport(): EndpointReport
+        - verdictOf(call: RecordedCall, spec: EndpointSpec): Verdict
+    }
+    class EndpointReport <<changed>> #FFF8DC {
+        - spec: EndpointSpec
+        - verdicts: Map<RecordedCall, Verdict>
+        ' removed: + EndpointReport(template: String, callCounts: Map<HttpMethod, Integer>, calls: List<RecordedCall>)
+        --
+        + EndpointReport(template: String, callCounts: Map<HttpMethod, Integer>, calls: List<RecordedCall>, spec: EndpointSpec, verdicts: Map<RecordedCall, Verdict>)
+        + getSpec(): EndpointSpec
+        + getVerdict(call: RecordedCall): Verdict
+        + getValidCount(): int
+        + getInvalidCount(): int
+        + getViolationCounts(): Map<ViolationKind, Integer>
+    }
+    class RecordedCall <<changed>> #FFF8DC {
+        ' removed: - arguments: Map<String, String>
+        ' removed: + RecordedCall(call: ApiCall, arguments: Map<String, String>)
+        - request: ParsedRequest
+        --
+        + RecordedCall(call: ApiCall, request: ParsedRequest)
+        + getRequest(): ParsedRequest
+        + getArguments(): List<Argument>
+        + getPathArguments(): Map<String, String>
+    }
+    class ApiCall <<changed>> #FFF8DC {
+        - request: RequestData
+        --
+        + ApiCall(method: HttpMethod, url: String, statusCode: int, responseHeaders: String, responseBody: String, request: RequestData)
+        + getRequest(): RequestData
+    }
+    class UrlPath <<changed>> #FFF8DC {
+        + equals(other: Object): boolean
+        + hashCode(): int
+        + toString(): String
+    }
+    class EndpointPattern {
+    }
+    enum HttpMethod {
+    }
+
+    ' ---------------------------------------- request side
+    class RequestData #E8F5E9 {
+        - query: String
+        - headers: List<Header>
+        - contentType: String
+        - body: String
+        - bodyState: BodyState
+        --
+        + RequestData(query: String, headers: List<Header>, contentType: String, body: String, bodyState: BodyState)
+        + {static} none(): RequestData
+        + getQuery(): String
+        + getHeaders(): List<Header>
+        + getContentType(): String
+        + getBody(): String
+        + getBodyState(): BodyState
+        + hasBody(): boolean
+    }
+    class Header #E8F5E9 {
+        - name: String
+        - value: String
+        --
+        + Header(name: String, value: String)
+        + getName(): String
+        + getValue(): String
+    }
+    enum BodyState <<enumeration>> #E8F5E9 {
+        NONE
+        TEXT
+        CUT
+        BINARY
+    }
+    class RequestParser #E8F5E9 {
+        + {static} parse(request: RequestData, pathArguments: Map<String, String>): ParsedRequest
+        - {static} parsePairs(text: String, location: ArgumentLocation): List<Argument>
+        - {static} parseHeaders(headers: List<Header>): List<Argument>
+    }
+    class ParsedRequest #E8F5E9 {
+        - arguments: List<Argument>
+        - warnings: List<Warning>
+        - malformedBody: String
+        - contentType: String
+        - bodyChecked: boolean
+        --
+        + ParsedRequest(arguments: List<Argument>, warnings: List<Warning>, malformedBody: String, contentType: String, bodyChecked: boolean)
+        + getArguments(): List<Argument>
+        + getWarnings(): List<Warning>
+        + isBodyMalformed(): boolean
+        + getMalformedBodyReason(): String
+        + getContentType(): String
+        + isBodyChecked(): boolean
+    }
+    class JsonReader #E8F5E9 {
+        - text: String
+        - maxDepth: int
+        --
+        ~ JsonReader(text: String, maxDepth: int)
+        ~ read(): List<Argument>
+        ~ isTooDeep(): boolean
+    }
+    class MediaType #E8F5E9 {
+        + {static} normalise(text: String): String
+        + {static} isValid(type: String): boolean
+        + {static} isJson(type: String): boolean
+        + {static} isForm(type: String): boolean
+    }
+    class Argument #E8F5E9 {
+        - name: String
+        - location: ArgumentLocation
+        - value: String
+        - jsonKind: JsonKind
+        - malformedEncoding: boolean
+        --
+        + Argument(name: String, location: ArgumentLocation, value: String, jsonKind: JsonKind, malformedEncoding: boolean)
+        + getName(): String
+        + getLocation(): ArgumentLocation
+        + getValue(): String
+        + getJsonKind(): JsonKind
+        + isMalformedEncoding(): boolean
+        + isContainer(): boolean
+    }
+    enum ArgumentLocation <<enumeration>> #E8F5E9 {
+        PATH
+        QUERY
+        BODY
+        HEADER
+    }
+    enum JsonKind <<enumeration>> #E8F5E9 {
+        STRING
+        NUMBER
+        BOOLEAN
+        NULL
+        OBJECT
+        ARRAY
+    }
+
+    ' ---------------------------------------- the spec
+    class EndpointSpec #E8F5E9 {
+        - operations: Map<HttpMethod, OperationSpec>
+        --
+        - EndpointSpec(operations: Map<HttpMethod, OperationSpec>)
+        + {static} empty(): EndpointSpec
+        + isEmpty(): boolean
+        + operation(method: HttpMethod): Optional<OperationSpec>
+        + items(): List<SpecItem>
+        + with(item: SpecItem): EndpointSpec
+        + without(item: SpecItem): EndpointSpec
+        + verify(call: RecordedCall): Verdict
+        - {static} isPreflight(call: RecordedCall): boolean
+    }
+    class OperationSpec #E8F5E9 {
+        - method: HttpMethod
+        - contentTypes: List<String>
+        - parameters: List<ParameterSpec>
+        --
+        + OperationSpec(method: HttpMethod, contentTypes: List<String>, parameters: List<ParameterSpec>)
+        + getMethod(): HttpMethod
+        + getContentTypes(): List<String>
+        + getParameters(): List<ParameterSpec>
+        + verify(call: RecordedCall): Verdict
+        - find(argument: Argument): ParameterSpec
+        - declares(location: ArgumentLocation): boolean
+    }
+    class SpecItem #E8F5E9 {
+        - kind: SpecItemKind
+        - method: HttpMethod
+        - mediaType: String
+        - parameter: ParameterSpec
+        --
+        + {static} method(method: HttpMethod): SpecItem
+        + {static} contentType(method: HttpMethod, mediaType: String): SpecItem
+        + {static} parameter(method: HttpMethod, parameter: ParameterSpec): SpecItem
+        + getKind(): SpecItemKind
+        + getMethod(): HttpMethod
+        + getMediaType(): String
+        + getParameter(): ParameterSpec
+    }
+    enum SpecItemKind <<enumeration>> #E8F5E9 {
+        METHOD
+        CONTENT_TYPE
+        PATH_VARIABLE
+        QUERY_PARAMETER
+        BODY_FIELD
+        HEADER
+    }
+    class ParameterSpec #E8F5E9 {
+        - location: ArgumentLocation
+        - name: String
+        - fieldName: FieldName
+        - type: ParameterType
+        - required: boolean
+        --
+        + ParameterSpec(location: ArgumentLocation, name: String, type: ParameterType, required: boolean)
+        + getLocation(): ArgumentLocation
+        + getName(): String
+        + getType(): ParameterType
+        + isRequired(): boolean
+        + accepts(argument: Argument, jsonBody: boolean): boolean
+        + check(argument: Argument): Check
+    }
+    class FieldName #E8F5E9 {
+        - parts: List<String>
+        --
+        + {static} parse(text: String): FieldName
+        + matches(argumentName: String): boolean
+        + isWildcard(): boolean
+        + isMoreSpecificThan(other: FieldName): boolean
+    }
+    abstract class ParameterType <<abstract>> #E8F5E9 {
+        + {abstract} check(argument: Argument): Optional<Violation>
+        + warningFor(argument: Argument): Optional<Warning>
+        + {abstract} getName(): String
+        + describeRange(): String
+    }
+    class StringType #E8F5E9 {
+        + check(argument: Argument): Optional<Violation>
+        + getName(): String
+    }
+    class IntegerType #E8F5E9 {
+        - min: BigInteger
+        - max: BigInteger
+        --
+        + IntegerType(min: BigInteger, max: BigInteger)
+        + {static} parseBound(text: String): BigInteger
+        + check(argument: Argument): Optional<Violation>
+        + warningFor(argument: Argument): Optional<Warning>
+        + getName(): String
+        + describeRange(): String
+    }
+    class DecimalType #E8F5E9 {
+        - min: BigDecimal
+        - max: BigDecimal
+        --
+        + DecimalType(min: BigDecimal, max: BigDecimal)
+        + {static} parseBound(text: String): BigDecimal
+        + check(argument: Argument): Optional<Violation>
+        + warningFor(argument: Argument): Optional<Warning>
+        + getName(): String
+        + describeRange(): String
+    }
+    class Base64Type #E8F5E9 {
+        + check(argument: Argument): Optional<Violation>
+        + getName(): String
+    }
+
+    ' ---------------------------------------- the result
+    class Verdict #E8F5E9 {
+        - status: VerdictStatus
+        - preflight: boolean
+        - checks: List<Check>
+        - violations: List<Violation>
+        - unchecked: List<Argument>
+        - warnings: List<Warning>
+        --
+        + Verdict(checks: List<Check>, violations: List<Violation>, unchecked: List<Argument>, warnings: List<Warning>)
+        + {static} notVerified(preflight: boolean): Verdict
+        + getStatus(): VerdictStatus
+        + isPreflight(): boolean
+        + getChecks(): List<Check>
+        + getViolations(): List<Violation>
+        + getUnchecked(): List<Argument>
+        + getWarnings(): List<Warning>
+    }
+    enum VerdictStatus <<enumeration>> #E8F5E9 {
+        VALID
+        INVALID
+        NOT_VERIFIED
+    }
+    class Check #E8F5E9 {
+        - argument: Argument
+        - parameter: ParameterSpec
+        - violation: Violation
+        --
+        + Check(argument: Argument, parameter: ParameterSpec, violation: Violation)
+        + isMatched(): boolean
+        + getArgument(): Argument
+        + getParameter(): ParameterSpec
+        + getViolation(): Violation
+    }
+    class Violation #E8F5E9 {
+        - kind: ViolationKind
+        - location: ArgumentLocation
+        - name: String
+        - value: String
+        - details: List<String>
+        --
+        + Violation(kind: ViolationKind, location: ArgumentLocation, name: String, value: String, details: List<String>)
+        + getKind(): ViolationKind
+        + getLocation(): ArgumentLocation
+        + getName(): String
+        + getValue(): String
+        + getDetails(): List<String>
+    }
+    enum ViolationKind <<enumeration>> #E8F5E9 {
+        UNSPECIFIED_METHOD
+        UNSPECIFIED_CONTENT_TYPE
+        MALFORMED_BODY
+        EXTRA_ARGUMENT
+        INVALID_TYPE
+        OUT_OF_RANGE
+        MISSING_ARGUMENT
+    }
+    class Warning #E8F5E9 {
+        - kind: WarningKind
+        - location: ArgumentLocation
+        - name: String
+        - details: List<String>
+        --
+        + Warning(kind: WarningKind, location: ArgumentLocation, name: String, details: List<String>)
+        + getKind(): WarningKind
+        + getLocation(): ArgumentLocation
+        + getName(): String
+        + getDetails(): List<String>
+    }
+    enum WarningKind <<enumeration>> #E8F5E9 {
+        REPEATED_PARAMETER
+        PRECISION
+        BODY_NOT_CHECKED
+        TOO_MANY_ARGUMENTS
+        TOO_DEEP
+    }
+
+    ' ---------------------------------------- unmatched paths (secondary)
+    class UnmatchedPaths #E8F5E9 {
+        - counts: Map<UrlPath, Integer>
+        - overflow: int
+        --
+        + add(path: UrlPath): void
+        + counts(): Map<UrlPath, Integer>
+        + getOverflow(): int
+        + clear(): void
+    }
+    class PatternDraft #E8F5E9 {
+        - parts: List<String>
+        - names: List<String>
+        --
+        + PatternDraft(path: UrlPath)
+        + size(): int
+        + part(index: int): String
+        + isVariable(index: int): boolean
+        + canBeLiteral(index: int): boolean
+        + toggle(index: int): void
+        + rename(index: int, name: String): void
+        + name(index: int): String
+        + toTemplate(): String
+        + problem(): Optional<String>
+    }
+}
+
+' ============================================================ Notes
+note as N_Verify
+    **EndpointSpec / OperationSpec.verify** (Information Expert, SPEC-V01 … V17)
+
+    ""EndpointSpec.verify(call):""
+    ""  if isEmpty(): return Verdict.notVerified(false)""
+    ""  if isPreflight(call): return Verdict.notVerified(true)""
+    ""  op = operations.get(method of call)""
+    ""  if op == null: return Verdict with UNSPECIFIED_METHOD""
+    ""  return op.verify(call)""
+    ""OperationSpec.verify(call):""
+    ""  content type check if contentTypes not empty""
+    ""  malformed body -> MALFORMED_BODY, skip body checks""
+    ""  for a in call.getArguments():""
+    ""    p = find(a)  // location + name, most specific""
+    ""    if p != null: checks.add(p.check(a))""
+    ""    else if declares(a.location) and not header: EXTRA_ARGUMENT""
+    ""    else: unchecked.add(a)""
+    ""  for each required p without argument: MISSING_ARGUMENT""
+    ""  warnings: request warnings + type warnings + repeated names""
+    ""  return new Verdict(checks, violations, unchecked, warnings)""
+end note
+
+note as N_Types
+    **ParameterType** (Polymorphism, like ""PathSegment"")
+    Each subclass owns its grammar (SPEC-T03 … T07); ""check"" never trims
+    and knows text values vs JSON kinds. Integer and Decimal hold an
+    optional range and add the PRECISION warning (SPEC-T11).
+end note
+
+note as N_Cache
+    **Endpoint** (Creator of ""RecordedCall"", Expert for its spec)
+
+    ""record(call, path):""
+    ""  if not pattern.matches(path): return false""
+    ""  parsed = RequestParser.parse(call.getRequest(), pattern.argumentsOf(path))""
+    ""  calls.add(new RecordedCall(call, parsed))""
+    ""addSpecItem(item):  spec = spec.with(item); verdicts.clear()""
+    ""createReport():""
+    ""  s = spec   // read once, one spec per report (SPEC-L02)""
+    ""  for c in copy of calls: verdicts c -> verdictOf(c, s)""
+    ""  return new EndpointReport(..., s, verdicts)""
+end note
+
+note as N_Parse
+    **RequestParser** and **JsonReader** (Pure Fabrication, like ""UrlPath"")
+    Hand-written scanners, no regular expressions (SPEC-L04).
+    Path arguments come from ""EndpointPattern"" (US10), then query
+    (SPEC-Q), body (JSON SPEC-J or form SPEC-Q), headers (SPEC-H).
+    Limits: 200 arguments, depth 10 (SPEC-L01). Never throws.
+end note
+
+note as N_Fields
+    **FieldName** (Pure Fabrication): parts split on ""."", each
+    ""key"" + any ""[]"" / ""{}"" (SPEC-J09). ""matches"" walks the parts;
+    ""{}"" matches any one key (SPEC-J10); ""isMoreSpecificThan""
+    prefers a concrete key at the leftmost difference (SPEC-J11).
+end note
+
+note as N_Legend
+    **Legend**: green = new in US11; yellow ""<<changed>>"" = US10 class,
+    only new or changed members shown; white without members =
+    unchanged US10 class (see US10 class diagram v3).
+end note
+
+' ============================================================ Relations
+RestTrafficListener ..> HttpMessage : <<use>>
+RestTrafficListener ..> RequestData : <<create>>
+RestTrafficListener ..> ApiCall : <<create>>
+
+RestExtractionPanel --> "specificationPanel 1" SpecificationPanel
+RestExtractionPanel --> "checkWriter 1" CheckWriter
+RestExtractionPanel ..> UnmatchedPathsPanel : <<create>>
+SpecificationPanel -up-|> JPanel
+SpecificationPanel --> "form 1" SpecItemForm
+SpecificationPanel --> "items 1" SpecItemTableModel
+SpecificationPanel --> "extractor 1" RestExtractor
+SpecItemTableModel -up-|> AbstractTableModel
+SpecItemForm ..> SpecItem : <<create>>
+SpecItemForm --> "kind 1" SpecItemKind
+SpecItemForm ..> SpecField : <<use>>
+UnmatchedPathsPanel -up-|> JPanel
+UnmatchedPathsPanel ..> PatternBuilderDialog : <<create>>
+UnmatchedPathsPanel --> "extractor 1" RestExtractor
+PatternBuilderDialog -up-|> JDialog
+PatternBuilderDialog --> "draft 1" PatternDraft
+CallTableModel ..> Verdict : <<use>>
+ApiDocumentationWriter --> "checkWriter 1" CheckWriter
+CheckWriter ..> Verdict : <<use>>
+
+RestExtractor ..> SpecItem : <<use>>
+ApiNamespace "1" *-- "unmatched 1" UnmatchedPaths
+Endpoint "1" *-- "spec 1" EndpointSpec
+Endpoint ..> RequestParser : <<use>>
+Endpoint ..> EndpointReport : <<create>>
+EndpointReport --> "spec 1" EndpointSpec
+EndpointReport --> "verdicts 0..*" Verdict
+RecordedCall "1" *-- "request 1" ParsedRequest
+ApiCall "1" *-- "request 1" RequestData
+RequestData "1" *-- "headers 0..* {ordered}" Header
+RequestData --> "bodyState 1" BodyState
+RequestParser ..> ParsedRequest : <<create>>
+RequestParser ..> JsonReader : <<use>>
+RequestParser ..> MediaType : <<use>>
+RequestParser ..> Argument : <<create>>
+ParsedRequest "1" *-- "arguments 0..* {ordered}" Argument
+ParsedRequest "1" *-- "warnings 0..*" Warning
+Argument --> "location 1" ArgumentLocation
+Argument --> "jsonKind 0..1" JsonKind
+
+EndpointSpec "1" *-- "operations 0..*" OperationSpec
+EndpointSpec ..> SpecItem : <<use>>
+EndpointSpec ..> Verdict : <<create>>
+OperationSpec "1" *-- "parameters 0..* {ordered}" ParameterSpec
+OperationSpec ..> Verdict : <<create>>
+OperationSpec ..> MediaType : <<use>>
+SpecItem --> "parameter 0..1" ParameterSpec
+SpecItem --> "kind 1" SpecItemKind
+ParameterSpec "1" *-- "fieldName 0..1" FieldName
+ParameterSpec "1" *-- "type 1" ParameterType
+ParameterSpec ..> Check : <<create>>
+StringType -up-|> ParameterType
+IntegerType -up-|> ParameterType
+DecimalType -up-|> ParameterType
+Base64Type -up-|> ParameterType
+ParameterType ..> Violation : <<create>>
+ParameterType ..> Warning : <<create>>
+Verdict "1" *-- "checks 0..* {ordered}" Check
+Verdict "1" *-- "violations 0..* {ordered}" Violation
+Verdict "1" *-- "warnings 0..*" Warning
+Verdict --> "status 1" VerdictStatus
+Check --> "argument 1" Argument
+Check --> "parameter 1" ParameterSpec
+Check --> "violation 0..1" Violation
+Violation --> "kind 1" ViolationKind
+Warning --> "kind 1" WarningKind
+UnmatchedPaths ..> UrlPath : <<use>>
+PatternDraft ..> UrlPath : <<use>>
+PatternDraft ..> EndpointPattern : <<use>>
+OperationSpec --> "method 1" HttpMethod
+@enduml

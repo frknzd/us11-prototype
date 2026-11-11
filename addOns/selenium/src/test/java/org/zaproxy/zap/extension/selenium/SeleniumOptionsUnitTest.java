@@ -1,0 +1,996 @@
+/*
+ * Zed Attack Proxy (ZAP) and its related class files.
+ *
+ * ZAP is an HTTP/HTTPS proxy for assessing web application security.
+ *
+ * Copyright 2021 The ZAP Development Team
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.zaproxy.zap.extension.selenium;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
+
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.parosproxy.paros.Constant;
+import org.zaproxy.zap.extension.selenium.internal.BrowserArgument;
+import org.zaproxy.zap.extension.selenium.internal.BrowserPreference;
+import org.zaproxy.zap.extension.selenium.internal.CustomBrowserImpl;
+import org.zaproxy.zap.testutils.TestUtils;
+import org.zaproxy.zap.utils.ZapXmlConfiguration;
+
+/** Unit test for {@link SeleniumOptions}. */
+class SeleniumOptionsUnitTest extends TestUtils {
+
+    private Path seleniumExtensionsDir;
+    private SeleniumOptions options;
+
+    @BeforeEach
+    void setUp() throws Exception {
+        mockMessages(new ExtensionSelenium());
+        setUpZap();
+        seleniumExtensionsDir = Paths.get(Constant.getZapHome(), "selenium", "extensions");
+
+        options = new SeleniumOptions();
+    }
+
+    @Test
+    void shouldCreateSeleniumExtensionsDirOnLoad() {
+        // Given / When
+        options.load(new ZapXmlConfiguration());
+        // Then
+        assertThat(Files.isDirectory(seleniumExtensionsDir), is(equalTo(true)));
+    }
+
+    @Test
+    void shouldNotFailToSetBrowserExtensionsIfExtensionsDirDoesNotExist() throws Exception {
+        // Given
+        options.load(new ZapXmlConfiguration());
+        Files.deleteIfExists(seleniumExtensionsDir);
+        // When / Then
+        assertDoesNotThrow(() -> options.setBrowserExtensions(Collections.emptyList()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldLoadConfigWithConfirmRemoveBrowserArgument(boolean value) {
+        // Given
+        ZapXmlConfiguration config =
+                configWith(
+                        "<selenium>\n"
+                                + "  <confirmRemoveBrowserArg>\n"
+                                + value
+                                + "</confirmRemoveBrowserArg>\n"
+                                + "</selenium>");
+        // When
+        options.load(config);
+        // Then
+        assertThat(options.isConfirmRemoveBrowserArgument(), is(equalTo(value)));
+    }
+
+    @Test
+    void shouldLoadConfigWithInvalidConfirmRemoveBrowserArgument() {
+        // Given
+        ZapXmlConfiguration config =
+                configWith(
+                        "<selenium>\n"
+                                + "  <confirmRemoveBrowserArg>not boolean</confirmRemoveBrowserArg>\n"
+                                + "</selenium>");
+        // When
+        options.load(config);
+        // Then
+        assertThat(options.isConfirmRemoveBrowserArgument(), is(equalTo(true)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldSetAndPersistConfirmRemoveBrowserArgument(boolean value) throws Exception {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        // When
+        options.setConfirmRemoveBrowserArgument(value);
+        // Then
+        assertThat(options.isConfirmRemoveBrowserArgument(), is(equalTo(value)));
+        assertThat(config.getBoolean("selenium.confirmRemoveBrowserArg"), is(equalTo(value)));
+    }
+
+    static Stream<Arguments> browserNameKey() {
+        return Stream.of(
+                arguments("chrome", "selenium.chromeArgs.arg"),
+                arguments("firefox", "selenium.firefoxArgs.arg"));
+    }
+
+    static Stream<Arguments> browserPreferenceNameKey() {
+        return Stream.of(
+                arguments("chrome", "selenium.chromePrefs.pref"),
+                arguments("edge", "selenium.edgePrefs.pref"),
+                arguments("firefox", "selenium.firefoxPrefs.pref"));
+    }
+
+    static Stream<String> invalidBrowserNames() {
+        return Stream.of("not supported", null);
+    }
+
+    @ParameterizedTest
+    @MethodSource("browserNameKey")
+    void shouldAddBrowserArgument(String browser, String key) {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        BrowserArgument argument = new BrowserArgument("--arg", true);
+        // When
+        options.addBrowserArgument(browser, argument);
+        // Then
+        assertThat(options.getBrowserArguments(browser), hasSize(1));
+        assertThat(config.getProperty(key + ".argument"), is(equalTo("--arg")));
+        assertThat(config.getProperty(key + ".enabled"), is(equalTo(true)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("browserNameKey")
+    void shouldThrowIfAddingNullBrowserArgument(String browser, String key) {
+        // Given
+        BrowserArgument argument = null;
+        // When / Then
+        assertThrows(
+                NullPointerException.class, () -> options.addBrowserArgument(browser, argument));
+        assertThat(options.getBrowserArguments(browser), hasSize(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidBrowserNames")
+    void shouldThrowIfAddingBrowserArgumentToInvalidBrowser(String browser) {
+        // Given
+        BrowserArgument argument = new BrowserArgument("--arg", true);
+        // When / Then
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> options.addBrowserArgument(browser, argument));
+    }
+
+    @ParameterizedTest
+    @MethodSource("browserNameKey")
+    void shouldSetBrowserArgumentEnabled(String browser, String key) {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        options.addBrowserArgument(browser, new BrowserArgument("--arg", true));
+        options.addBrowserArgument(browser, new BrowserArgument("--other-arg", true));
+        // When
+        boolean removed = options.setBrowserArgumentEnabled(browser, "  --arg \t", false);
+        // Then
+        assertThat(removed, is(equalTo(true)));
+        assertThat(options.getBrowserArguments(browser), hasSize(2));
+        assertThat(config.getProperty(key + "(0).argument"), is(equalTo("--arg")));
+        assertThat(config.getProperty(key + "(0).enabled"), is(equalTo(false)));
+        assertThat(config.getProperty(key + "(1).argument"), is(equalTo("--other-arg")));
+        assertThat(config.getProperty(key + "(1).enabled"), is(equalTo(true)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("browserNameKey")
+    void shouldReturnFalseIfBrowserArgumentNotChanged(String browser, String key) {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        options.addBrowserArgument(browser, new BrowserArgument("--arg", true));
+        options.addBrowserArgument(browser, new BrowserArgument("--other-arg", true));
+        // When
+        boolean removed = options.setBrowserArgumentEnabled(browser, "--not-same-other-arg", false);
+        // Then
+        assertThat(removed, is(equalTo(false)));
+        assertThat(options.getBrowserArguments(browser), hasSize(2));
+        assertThat(config.getProperty(key + "(0).argument"), is(equalTo("--arg")));
+        assertThat(config.getProperty(key + "(0).enabled"), is(equalTo(true)));
+        assertThat(config.getProperty(key + "(1).argument"), is(equalTo("--other-arg")));
+        assertThat(config.getProperty(key + "(1).enabled"), is(equalTo(true)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("browserNameKey")
+    void shouldThrowIfSettingNullArgumentEnabled(String browser, String key) {
+        // Given
+        String argument = null;
+        // When / Then
+        assertThrows(
+                NullPointerException.class,
+                () -> options.setBrowserArgumentEnabled(browser, argument, true));
+        assertThat(options.getBrowserArguments(browser), hasSize(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidBrowserNames")
+    void shouldThrowIfSettingArgumentEnabledToInvalidBrowser(String browser) {
+        // Given
+        String argument = "--arg";
+        // When / Then
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> options.setBrowserArgumentEnabled(browser, argument, true));
+    }
+
+    @ParameterizedTest
+    @MethodSource("browserNameKey")
+    void shouldRemoveBrowserArgument(String browser, String key) {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        options.addBrowserArgument(browser, new BrowserArgument("--arg", true));
+        options.addBrowserArgument(browser, new BrowserArgument("--other-arg", true));
+        // When
+        boolean removed = options.removeBrowserArgument(browser, "   --arg \t");
+        // Then
+        assertThat(removed, is(equalTo(true)));
+        assertThat(options.getBrowserArguments(browser), hasSize(1));
+        assertThat(config.getProperty(key + "(0).argument"), is(equalTo("--other-arg")));
+        assertThat(config.getProperty(key + "(0).enabled"), is(equalTo(true)));
+        assertThat(config.getProperty(key + "(1).argument"), is(nullValue()));
+        assertThat(config.getProperty(key + "(1).enabled"), is(nullValue()));
+    }
+
+    @ParameterizedTest
+    @MethodSource("browserNameKey")
+    void shouldReturnFalseIfBrowserArgumentNotRemoved(String browser, String key) {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        options.addBrowserArgument(browser, new BrowserArgument("--arg", true));
+        options.addBrowserArgument(browser, new BrowserArgument("--other-arg", true));
+        // When
+        boolean removed = options.removeBrowserArgument(browser, "--not-same-other-arg");
+        // Then
+        assertThat(removed, is(equalTo(false)));
+        assertThat(options.getBrowserArguments(browser), hasSize(2));
+        assertThat(config.getProperty(key + "(0).argument"), is(equalTo("--arg")));
+        assertThat(config.getProperty(key + "(0).enabled"), is(equalTo(true)));
+        assertThat(config.getProperty(key + "(1).argument"), is(equalTo("--other-arg")));
+        assertThat(config.getProperty(key + "(1).enabled"), is(equalTo(true)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("browserNameKey")
+    void shouldThrowIfRemovingNullArgument(String browser, String key) {
+        // Given
+        String argument = null;
+        // When / Then
+        assertThrows(
+                NullPointerException.class, () -> options.removeBrowserArgument(browser, argument));
+        assertThat(options.getBrowserArguments(browser), hasSize(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidBrowserNames")
+    void shouldThrowIfRemovingBrowserArgumentFromInvalidBrowser(String browser) {
+        // Given
+        String argument = "--arg";
+        // When / Then
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> options.removeBrowserArgument(browser, argument));
+    }
+
+    @ParameterizedTest
+    @MethodSource("browserNameKey")
+    void shouldLoadConfigWithBrowserArguments(String browser, String key) {
+        // Given
+        ZapXmlConfiguration config =
+                configWith(
+                        "<selenium>\n"
+                                + "  <"
+                                + browser
+                                + "Args>\n"
+                                + "      <arg>\n"
+                                + "        <argument>--arg</argument>\n"
+                                + "        <enabled>true</enabled>\n"
+                                + "      </arg>\n"
+                                + "      <arg>\n"
+                                + "        <argument>--other-arg</argument>\n"
+                                + "        <enabled>false</enabled>\n"
+                                + "      </arg>\n"
+                                + "  </"
+                                + browser
+                                + "Args>\n"
+                                + "</selenium>");
+        // When
+        options.load(config);
+        // Then
+        assertThat(options.getBrowserArguments(browser), hasSize(2));
+        assertThat(options.getBrowserArguments(browser).get(0).getArgument(), is(equalTo("--arg")));
+        assertThat(options.getBrowserArguments(browser).get(0).isEnabled(), is(equalTo(true)));
+        assertThat(
+                options.getBrowserArguments(browser).get(1).getArgument(),
+                is(equalTo("--other-arg")));
+        assertThat(options.getBrowserArguments(browser).get(1).isEnabled(), is(equalTo(false)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("browserNameKey")
+    void shouldSetAndPersistBrowserArguments(String browser, String key) {
+        // Given
+        ZapXmlConfiguration config =
+                configWith(
+                        "<selenium>\n"
+                                + "  <"
+                                + browser
+                                + "Args>\n"
+                                + "      <arg>\n"
+                                + "        <argument>--arg</argument>\n"
+                                + "        <enabled>true</enabled>\n"
+                                + "      </arg>\n"
+                                + "      <arg>\n"
+                                + "        <argument>--other-arg</argument>\n"
+                                + "        <enabled>false</enabled>\n"
+                                + "      </arg>\n"
+                                + "  </"
+                                + browser
+                                + "Args>\n"
+                                + "</selenium>");
+        options.load(config);
+        List<BrowserArgument> arguments = options.getBrowserArguments(browser);
+        options.load(new ZapXmlConfiguration());
+        // When
+        options.setBrowserArguments(browser, arguments);
+        // Then
+        assertThat(options.getBrowserArguments(browser), hasSize(2));
+        assertThat(options.getBrowserArguments(browser).get(0).getArgument(), is(equalTo("--arg")));
+        assertThat(options.getBrowserArguments(browser).get(0).isEnabled(), is(equalTo(true)));
+        assertThat(
+                options.getBrowserArguments(browser).get(1).getArgument(),
+                is(equalTo("--other-arg")));
+        assertThat(options.getBrowserArguments(browser).get(1).isEnabled(), is(equalTo(false)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidBrowserNames")
+    void shouldThrowIfSettingBrowserArgumentsToInvalidBrowser(String browser) {
+        // Given
+        List<BrowserArgument> arguments = List.of();
+        // When / Then
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> options.setBrowserArguments(browser, arguments));
+    }
+
+    @ParameterizedTest
+    @MethodSource("browserNameKey")
+    void shouldLoadConfigWhileIgnoringInvalidBrowserArguments(String browser, String key) {
+        // Given
+        ZapXmlConfiguration config =
+                configWith(
+                        "<selenium>\n"
+                                + "  <"
+                                + browser
+                                + "Args>\n"
+                                + "      <arg>\n"
+                                + "        <argument></argument>\n"
+                                + "        <enabled>true</enabled>\n"
+                                + "      </arg>\n"
+                                + "      <arg>\n"
+                                + "        <enabled>false</enabled>\n"
+                                + "      </arg>\n"
+                                + "      <arg>\n"
+                                + "        <argument>--other-arg</argument>\n"
+                                + "        <enabled>not a boolean</enabled>\n"
+                                + "      </arg>\n"
+                                + "      <arg>\n"
+                                + "        <argument>--valid-other-arg</argument>\n"
+                                + "      </arg>\n"
+                                + "  </"
+                                + browser
+                                + "Args>\n"
+                                + "</selenium>");
+        // When
+        options.load(config);
+        // Then
+        assertThat(options.getBrowserArguments(browser), hasSize(1));
+        assertThat(
+                options.getBrowserArguments(browser).get(0).getArgument(),
+                is(equalTo("--valid-other-arg")));
+        assertThat(options.getBrowserArguments(browser).get(0).isEnabled(), is(equalTo(true)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidBrowserNames")
+    void shouldThrowIfGettingBrowserArgumentsFromInvalidBrowser(String browser) {
+        assertThrows(IllegalArgumentException.class, () -> options.getBrowserArguments(browser));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldLoadConfigWithConfirmRemoveBrowserPreference(boolean value) {
+        // Given
+        ZapXmlConfiguration config =
+                configWith(
+                        "<selenium>\n"
+                                + "  <confirmRemoveBrowserPref>"
+                                + value
+                                + "</confirmRemoveBrowserPref>\n"
+                                + "</selenium>");
+        // When
+        options.load(config);
+        // Then
+        assertThat(options.isConfirmRemoveBrowserPreference(), is(equalTo(value)));
+    }
+
+    @Test
+    void shouldLoadConfigWithInvalidConfirmRemoveBrowserPreference() {
+        // Given
+        ZapXmlConfiguration config =
+                configWith(
+                        "<selenium>\n"
+                                + "  <confirmRemoveBrowserPref>not boolean</confirmRemoveBrowserPref>\n"
+                                + "</selenium>");
+        // When
+        options.load(config);
+        // Then
+        assertThat(options.isConfirmRemoveBrowserPreference(), is(equalTo(true)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldSetAndPersistConfirmRemoveBrowserPreference(boolean value) throws Exception {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        // When
+        options.setConfirmRemoveBrowserPreference(value);
+        // Then
+        assertThat(options.isConfirmRemoveBrowserPreference(), is(equalTo(value)));
+        assertThat(config.getBoolean("selenium.confirmRemoveBrowserPref"), is(equalTo(value)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("browserPreferenceNameKey")
+    void shouldAddBrowserPreference(String browser, String key) {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        BrowserPreference preference = new BrowserPreference("pref.name", "prefValue", true);
+        // When
+        options.addBrowserPreference(browser, preference);
+        // Then
+        assertThat(options.getBrowserPreferences(browser), hasSize(1));
+        assertThat(config.getProperty(key + "(0).name"), is(equalTo("pref.name")));
+        assertThat(config.getProperty(key + "(0).value"), is(equalTo("prefValue")));
+        assertThat(config.getProperty(key + "(0).enabled"), is(equalTo(true)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("browserPreferenceNameKey")
+    void shouldThrowIfAddingNullBrowserPreference(String browser, String key) {
+        // Given
+        BrowserPreference preference = null;
+        // When / Then
+        assertThrows(
+                NullPointerException.class,
+                () -> options.addBrowserPreference(browser, preference));
+        assertThat(options.getBrowserPreferences(browser), hasSize(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidBrowserNames")
+    void shouldThrowIfAddingBrowserPreferenceToInvalidBrowser(String browser) {
+        // Given
+        BrowserPreference preference = new BrowserPreference("name", "value", true);
+        // When / Then
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> options.addBrowserPreference(browser, preference));
+    }
+
+    @ParameterizedTest
+    @MethodSource("browserPreferenceNameKey")
+    void shouldSetBrowserPreferenceEnabled(String browser, String key) {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        options.addBrowserPreference(browser, new BrowserPreference("pref1", "v1", true));
+        options.addBrowserPreference(browser, new BrowserPreference("pref2", "v2", true));
+        // When
+        boolean changed = options.setBrowserPreferenceEnabled(browser, "  pref1 \t", false);
+        // Then
+        assertThat(changed, is(equalTo(true)));
+        assertThat(options.getBrowserPreferences(browser), hasSize(2));
+        assertThat(config.getProperty(key + "(0).name"), is(equalTo("pref1")));
+        assertThat(config.getProperty(key + "(0).enabled"), is(equalTo(false)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("browserPreferenceNameKey")
+    void shouldRemoveBrowserPreference(String browser, String key) {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        options.addBrowserPreference(browser, new BrowserPreference("pref1", "v1", true));
+        options.addBrowserPreference(browser, new BrowserPreference("pref2", "v2", true));
+        // When
+        boolean removed = options.removeBrowserPreference(browser, "   pref1 \t");
+        // Then
+        assertThat(removed, is(equalTo(true)));
+        assertThat(options.getBrowserPreferences(browser), hasSize(1));
+        assertThat(options.getBrowserPreferences(browser).get(0).getName(), is(equalTo("pref2")));
+    }
+
+    @ParameterizedTest
+    @MethodSource("browserPreferenceNameKey")
+    void shouldLoadConfigWithBrowserPreferences(String browser, String key) {
+        // Given
+        String prefTag = browser + "Prefs";
+        ZapXmlConfiguration config =
+                configWith(
+                        "<selenium>\n"
+                                + "  <"
+                                + prefTag
+                                + ">\n"
+                                + "      <pref>\n"
+                                + "        <name>pref.name</name>\n"
+                                + "        <value>value1</value>\n"
+                                + "        <enabled>true</enabled>\n"
+                                + "      </pref>\n"
+                                + "      <pref>\n"
+                                + "        <name>other.pref</name>\n"
+                                + "        <value>value2</value>\n"
+                                + "        <enabled>false</enabled>\n"
+                                + "      </pref>\n"
+                                + "  </"
+                                + prefTag
+                                + ">\n"
+                                + "</selenium>");
+        // When
+        options.load(config);
+        // Then
+        assertThat(options.getBrowserPreferences(browser), hasSize(2));
+        assertThat(
+                options.getBrowserPreferences(browser).get(0).getName(), is(equalTo("pref.name")));
+        assertThat(options.getBrowserPreferences(browser).get(0).getValue(), is(equalTo("value1")));
+        assertThat(options.getBrowserPreferences(browser).get(0).isEnabled(), is(equalTo(true)));
+        assertThat(
+                options.getBrowserPreferences(browser).get(1).getName(), is(equalTo("other.pref")));
+        assertThat(options.getBrowserPreferences(browser).get(1).isEnabled(), is(equalTo(false)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("browserPreferenceNameKey")
+    void shouldSetAndPersistBrowserPreferences(String browser, String key) {
+        // Given
+        String prefTag = browser + "Prefs";
+        ZapXmlConfiguration config =
+                configWith(
+                        "<selenium>\n"
+                                + "  <"
+                                + prefTag
+                                + ">\n"
+                                + "      <pref>\n"
+                                + "        <name>pref.name</name>\n"
+                                + "        <value>val1</value>\n"
+                                + "        <enabled>true</enabled>\n"
+                                + "      </pref>\n"
+                                + "      <pref>\n"
+                                + "        <name>other.pref</name>\n"
+                                + "        <value>val2</value>\n"
+                                + "        <enabled>false</enabled>\n"
+                                + "      </pref>\n"
+                                + "  </"
+                                + prefTag
+                                + ">\n"
+                                + "</selenium>");
+        options.load(config);
+        List<BrowserPreference> preferences = options.getBrowserPreferences(browser);
+        options.load(new ZapXmlConfiguration());
+        // When
+        options.setBrowserPreferences(browser, preferences);
+        // Then
+        assertThat(options.getBrowserPreferences(browser), hasSize(2));
+        assertThat(
+                options.getBrowserPreferences(browser).get(0).getName(), is(equalTo("pref.name")));
+        assertThat(options.getBrowserPreferences(browser).get(0).isEnabled(), is(equalTo(true)));
+        assertThat(
+                options.getBrowserPreferences(browser).get(1).getName(), is(equalTo("other.pref")));
+        assertThat(options.getBrowserPreferences(browser).get(1).isEnabled(), is(equalTo(false)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidBrowserNames")
+    void shouldThrowIfSettingBrowserPreferencesToInvalidBrowser(String browser) {
+        // Given
+        List<BrowserPreference> preferences = List.of();
+        // When / Then
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> options.setBrowserPreferences(browser, preferences));
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidBrowserNames")
+    void shouldThrowIfGettingBrowserPreferencesFromInvalidBrowser(String browser) {
+        assertThrows(IllegalArgumentException.class, () -> options.getBrowserPreferences(browser));
+    }
+
+    @Test
+    void shouldSetAndPersistFirefoxProfile() {
+        // Given
+        ZapXmlConfiguration config =
+                configWith(
+                        "<selenium>\n"
+                                + "  <firefoxProfile>test-profile</firefoxProfile>\n"
+                                + "</selenium>");
+        options.load(config);
+        String fxProfile = options.getFirefoxDefaultProfile();
+        options.load(new ZapXmlConfiguration());
+        // When
+        options.setFirefoxDefaultProfile("profile2");
+        // Then
+        assertThat(fxProfile, is(equalTo("test-profile")));
+        assertThat(options.getFirefoxDefaultProfile(), is(equalTo("profile2")));
+    }
+
+    @Test
+    void shouldThrowIfSettingNullFirefoxProfile() {
+        // Given / When / Then
+        assertThrows(NullPointerException.class, () -> options.setFirefoxDefaultProfile(null));
+    }
+
+    @Test
+    void shouldAddCustomBrowser() {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        CustomBrowserImpl browser =
+                new CustomBrowserImpl(
+                        "TestBrowser",
+                        "/path/to/driver",
+                        "/path/to/binary",
+                        CustomBrowserImpl.BrowserType.CHROMIUM,
+                        new ArrayList<>());
+        // When
+        options.addCustomBrowser(browser);
+        // Then
+        assertThat(options.getCustomBrowsers(), hasSize(1));
+        CustomBrowserImpl added = options.getCustomBrowsers().get(0);
+        assertThat(added.getName(), is(equalTo("TestBrowser")));
+        assertThat(added.getDriverPath(), is(equalTo("/path/to/driver")));
+        assertThat(added.getBinaryPath(), is(equalTo("/path/to/binary")));
+        assertThat(added.getBrowserType(), is(equalTo(CustomBrowserImpl.BrowserType.CHROMIUM)));
+    }
+
+    @Test
+    void shouldPersistCustomBrowserWhenAdded() {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        CustomBrowserImpl browser =
+                new CustomBrowserImpl(
+                        "TestBrowser",
+                        "/path/to/driver",
+                        "/path/to/binary",
+                        CustomBrowserImpl.BrowserType.CHROMIUM,
+                        new ArrayList<>());
+        // When
+        options.addCustomBrowser(browser);
+        // Then
+        assertThat(
+                config.getProperty("selenium.customBrowsers.browser(0).name"),
+                is(equalTo("TestBrowser")));
+        assertThat(
+                config.getProperty("selenium.customBrowsers.browser(0).driverPath"),
+                is(equalTo("/path/to/driver")));
+        assertThat(
+                config.getProperty("selenium.customBrowsers.browser(0).binaryPath"),
+                is(equalTo("/path/to/binary")));
+        assertThat(
+                config.getProperty("selenium.customBrowsers.browser(0).browserType"),
+                is(equalTo("CHROMIUM")));
+    }
+
+    @Test
+    void shouldAddMultipleCustomBrowsers() {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        CustomBrowserImpl browser1 =
+                new CustomBrowserImpl(
+                        "Browser1",
+                        "/driver1",
+                        "/binary1",
+                        CustomBrowserImpl.BrowserType.CHROMIUM,
+                        new ArrayList<>());
+        CustomBrowserImpl browser2 =
+                new CustomBrowserImpl(
+                        "Browser2",
+                        "/driver2",
+                        "/binary2",
+                        CustomBrowserImpl.BrowserType.FIREFOX,
+                        new ArrayList<>());
+        // When
+        options.addCustomBrowser(browser1);
+        options.addCustomBrowser(browser2);
+        // Then
+        assertThat(options.getCustomBrowsers(), hasSize(2));
+        assertThat(options.getCustomBrowsers().get(0).getName(), is(equalTo("Browser1")));
+        assertThat(options.getCustomBrowsers().get(1).getName(), is(equalTo("Browser2")));
+    }
+
+    @Test
+    void shouldAddCustomBrowserWithArguments() {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        List<BrowserArgument> arguments = new ArrayList<>();
+        arguments.add(new BrowserArgument("--arg1", true));
+        arguments.add(new BrowserArgument("--arg2", false));
+        CustomBrowserImpl browser =
+                new CustomBrowserImpl(
+                        "TestBrowser",
+                        "/path/to/driver",
+                        "/path/to/binary",
+                        CustomBrowserImpl.BrowserType.CHROMIUM,
+                        arguments);
+        // When
+        options.addCustomBrowser(browser);
+        // Then
+        assertThat(options.getCustomBrowsers(), hasSize(1));
+        CustomBrowserImpl added = options.getCustomBrowsers().get(0);
+        assertThat(added.getArguments(), hasSize(2));
+        assertThat(added.getArguments().get(0).getArgument(), is(equalTo("--arg1")));
+        assertThat(added.getArguments().get(0).isEnabled(), is(equalTo(true)));
+        assertThat(added.getArguments().get(1).getArgument(), is(equalTo("--arg2")));
+        assertThat(added.getArguments().get(1).isEnabled(), is(equalTo(false)));
+        // Verify persistence
+        assertThat(
+                config.getProperty("selenium.customBrowsers.browser(0).args.arg(0).argument"),
+                is(equalTo("--arg1")));
+        assertThat(
+                config.getProperty("selenium.customBrowsers.browser(0).args.arg(0).enabled"),
+                is(equalTo(true)));
+        assertThat(
+                config.getProperty("selenium.customBrowsers.browser(0).args.arg(1).argument"),
+                is(equalTo("--arg2")));
+        assertThat(
+                config.getProperty("selenium.customBrowsers.browser(0).args.arg(1).enabled"),
+                is(equalTo(false)));
+    }
+
+    @Test
+    void shouldAddCustomBrowserWithPreferences() {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        List<BrowserPreference> preferences = new ArrayList<>();
+        preferences.add(new BrowserPreference("pref.name1", "value1", true));
+        preferences.add(new BrowserPreference("pref.name2", "value2", false));
+        CustomBrowserImpl browser =
+                new CustomBrowserImpl(
+                        "TestBrowser",
+                        "/path/to/driver",
+                        "/path/to/binary",
+                        CustomBrowserImpl.BrowserType.CHROMIUM,
+                        new ArrayList<>(),
+                        preferences);
+        // When
+        options.addCustomBrowser(browser);
+        // Then
+        assertThat(options.getCustomBrowsers(), hasSize(1));
+        CustomBrowserImpl added = options.getCustomBrowsers().get(0);
+        assertThat(added.getPreferences(), hasSize(2));
+        assertThat(added.getPreferences().get(0).getName(), is(equalTo("pref.name1")));
+        assertThat(added.getPreferences().get(0).getValue(), is(equalTo("value1")));
+        assertThat(added.getPreferences().get(0).isEnabled(), is(equalTo(true)));
+        assertThat(added.getPreferences().get(1).getName(), is(equalTo("pref.name2")));
+        assertThat(added.getPreferences().get(1).isEnabled(), is(equalTo(false)));
+        assertThat(
+                config.getProperty("selenium.customBrowsers.browser(0).prefs.pref(0).name"),
+                is(equalTo("pref.name1")));
+        assertThat(
+                config.getProperty("selenium.customBrowsers.browser(0).prefs.pref(0).value"),
+                is(equalTo("value1")));
+        assertThat(
+                config.getProperty("selenium.customBrowsers.browser(0).prefs.pref(0).enabled"),
+                is(equalTo(true)));
+    }
+
+    @Test
+    void shouldRemoveCustomBrowserByName() {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        CustomBrowserImpl browser1 =
+                new CustomBrowserImpl(
+                        "Browser1",
+                        "/driver1",
+                        "/binary1",
+                        CustomBrowserImpl.BrowserType.CHROMIUM,
+                        new ArrayList<>());
+        CustomBrowserImpl browser2 =
+                new CustomBrowserImpl(
+                        "Browser2",
+                        "/driver2",
+                        "/binary2",
+                        CustomBrowserImpl.BrowserType.FIREFOX,
+                        new ArrayList<>());
+        options.addCustomBrowser(browser1);
+        options.addCustomBrowser(browser2);
+        // When
+        boolean removed = options.removeCustomBrowser("Browser1");
+        // Then
+        assertThat(removed, is(equalTo(true)));
+        assertThat(options.getCustomBrowsers(), hasSize(1));
+        assertThat(options.getCustomBrowsers().get(0).getName(), is(equalTo("Browser2")));
+    }
+
+    @Test
+    void shouldReturnFalseWhenRemovingNonExistentBrowser() {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        CustomBrowserImpl browser =
+                new CustomBrowserImpl(
+                        "Browser1",
+                        "/driver1",
+                        "/binary1",
+                        CustomBrowserImpl.BrowserType.CHROMIUM,
+                        new ArrayList<>());
+        options.addCustomBrowser(browser);
+        // When
+        boolean removed = options.removeCustomBrowser("NonExistent");
+        // Then
+        assertThat(removed, is(equalTo(false)));
+        assertThat(options.getCustomBrowsers(), hasSize(1));
+        assertThat(options.getCustomBrowsers().get(0).getName(), is(equalTo("Browser1")));
+    }
+
+    @Test
+    void shouldPersistRemovalOfCustomBrowser() {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        CustomBrowserImpl browser1 =
+                new CustomBrowserImpl(
+                        "Browser1",
+                        "/driver1",
+                        "/binary1",
+                        CustomBrowserImpl.BrowserType.CHROMIUM,
+                        new ArrayList<>());
+        CustomBrowserImpl browser2 =
+                new CustomBrowserImpl(
+                        "Browser2",
+                        "/driver2",
+                        "/binary2",
+                        CustomBrowserImpl.BrowserType.FIREFOX,
+                        new ArrayList<>());
+        options.addCustomBrowser(browser1);
+        options.addCustomBrowser(browser2);
+        // When
+        options.removeCustomBrowser("Browser1");
+        // Then
+        // Verify Browser1 is removed from config
+        assertThat(
+                config.getProperty("selenium.customBrowsers.browser(0).name"),
+                is(equalTo("Browser2")));
+        assertThat(config.getProperty("selenium.customBrowsers.browser(1).name"), is(nullValue()));
+    }
+
+    @Test
+    void shouldRemoveCustomBrowserWithExactNameMatch() {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        CustomBrowserImpl browser1 =
+                new CustomBrowserImpl(
+                        "Browser1",
+                        "/driver1",
+                        "/binary1",
+                        CustomBrowserImpl.BrowserType.CHROMIUM,
+                        new ArrayList<>());
+        CustomBrowserImpl browser2 =
+                new CustomBrowserImpl(
+                        "Browser1Test",
+                        "/driver2",
+                        "/binary2",
+                        CustomBrowserImpl.BrowserType.FIREFOX,
+                        new ArrayList<>());
+        options.addCustomBrowser(browser1);
+        options.addCustomBrowser(browser2);
+        // When
+        boolean removed = options.removeCustomBrowser("Browser1");
+        // Then
+        assertThat(removed, is(equalTo(true)));
+        assertThat(options.getCustomBrowsers(), hasSize(1));
+        assertThat(options.getCustomBrowsers().get(0).getName(), is(equalTo("Browser1Test")));
+    }
+
+    @Test
+    void shouldRemoveAllCustomBrowsers() {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        CustomBrowserImpl browser1 =
+                new CustomBrowserImpl(
+                        "Browser1",
+                        "/driver1",
+                        "/binary1",
+                        CustomBrowserImpl.BrowserType.CHROMIUM,
+                        new ArrayList<>());
+        CustomBrowserImpl browser2 =
+                new CustomBrowserImpl(
+                        "Browser2",
+                        "/driver2",
+                        "/binary2",
+                        CustomBrowserImpl.BrowserType.FIREFOX,
+                        new ArrayList<>());
+        CustomBrowserImpl browser3 =
+                new CustomBrowserImpl(
+                        "Browser3",
+                        "/driver3",
+                        "/binary3",
+                        CustomBrowserImpl.BrowserType.CHROMIUM,
+                        new ArrayList<>());
+        options.addCustomBrowser(browser1);
+        options.addCustomBrowser(browser2);
+        options.addCustomBrowser(browser3);
+        // When
+        options.removeCustomBrowser("Browser1");
+        options.removeCustomBrowser("Browser2");
+        options.removeCustomBrowser("Browser3");
+        // Then
+        assertThat(options.getCustomBrowsers(), hasSize(0));
+    }
+
+    @Test
+    void shouldHandleRemovalFromEmptyList() {
+        // Given
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        options.load(config);
+        // When
+        boolean removed = options.removeCustomBrowser("AnyBrowser");
+        // Then
+        assertThat(removed, is(equalTo(false)));
+        assertThat(options.getCustomBrowsers(), hasSize(0));
+    }
+
+    private static ZapXmlConfiguration configWith(String value) {
+        ZapXmlConfiguration config = new ZapXmlConfiguration();
+        String contents =
+                "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
+                        + "<config>\n"
+                        + value
+                        + "\n</config>";
+        try {
+            config.load(new ByteArrayInputStream(contents.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return config;
+    }
+}

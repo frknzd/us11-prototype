@@ -1,0 +1,47 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<TITLE>
+自動化フレームワーク - activeScan-policy ジョブ
+</TITLE>
+</HEAD>
+<BODY>
+<H1>自動化フレームワーク - activeScan-policy ジョブ</H1>
+
+このジョブはアクティブスキャンポリシーを定義します。このポリシーは <a href="job-ascan.html">activeScan</a> ジョブなど、後続のアクティブスキャン関連ジョブでプラン内で使用できます。
+
+<H2>YAML</H2>
+
+<pre>
+  - type: activeScan-policy            # 後続のアクティブスキャン関連ジョブで使用可能な新しいアクティブスキャンポリシーを定義します
+    parameters:
+      name:                            # 文字列: ポリシーの名前、必須
+    policyDefinition:                  # ポリシー定義
+      defaultStrength:                 # 文字列: すべてのルールのデフォルトの攻撃強度、Low、Medium、High、Insane (非推奨) のいずれか、デフォルト: Medium
+      defaultThreshold:                # 文字列: すべてのルールのデフォルトのアラートしきい値、Off、Low、Medium、Highのいずれか、デフォルト: Medium
+      alertTags:                       # アラートタグに基づいてルールを追加します。 'rules' の下に明示的にリストされているルールを上書きまたは削除しません
+        include: []                    # 含めるアラートタグのリスト、正規表現をサポート
+        exclude: []                    # このincludeリストから除外するアラートタグのリスト、正規表現をサポート
+        strength:                      # 文字列: このルールのセットの攻撃強度、Low、Medium、High、Insaneのいずれか、デフォルト: Medium
+        threshold:                     # 文字列: このルールのセットのアラートしきい値、Off、Low、Medium、Highのいずれか、デフォルト: Medium
+      rules:                           # 1つ以上のActive Scanルールと、デフォルトを上書きする関連設定のリスト
+      - id:                            # Int: https://www.zaproxy.org/docs/alerts/ に準拠したルールID
+        name:                          # コメント: ドキュメント作成目的のルールの名前 - これは必須ではなく、実際の動作には使用されません
+        strength:                      # 文字列: このルールの攻撃強度、Low、Medium、High、Insaneのいずれか、デフォルト: Medium
+        threshold:                     # 文字列: このルールののアラート閾値、Off、Low、Medium、Highのいずれか、デフォルト: Medium
+    enabled:                           # Bool: falseに設定されている場合、ジョブは実行されません、デフォルト: true
+    alwaysRun:                         # Bool: 設定され、ジョブが有効な場合、プランが早期に終了しても実行されます、デフォルト: false
+</pre>
+
+<h2>ポリシー定義の適用順序</h2>
+ZAPはポリシー定義を次の順序で処理します：
+
+<ol>
+    <li><strong>デフォルトの動作</strong>: すべてのルールはデフォルトの強度と閾値の設定で開始されます。通常、デフォルトのしきい値は <code>Off</code> に設定されることが推奨されます。
+    <li><strong>アラートタグの処理</strong>: <code>include パターンに一致するルールは、指定されたアラートタグの強度と閾値で有効になり、<code>exclude</code> パターンに一致するルールは、適用対象から除外されます。デフォルトのアラートタグの完全なリストについては、<a href="https://www.zaproxy.org/alerttags/">アラートタグ</a>を参照してください。
+    <li><strong>個々のルールの上書き</strong>: <code>rules</code> セクションに明示的にリストされているルールは、アラートタグの設定やポリシーのデフォルト設定よりも優先されます。
+</ol>
+
+</BODY>
+</HTML>
+

@@ -1,0 +1,61 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>
+Aba de WebSocket
+</title>
+</head>
+<body>
+<h1>Aba de WebSocket</h1>
+
+<p>
+A aba de WebSockets exibe todas as mensagens de conexões de WebSockets. Com o ZAP ativo, visite por exemplo <a href="http://browserquest.mozilla.org/">BrowserQuest da Mozilla</a> para ver WebSockets em ação.
+</p>
+
+<h2>Filtros</h2>
+	<h3>Seletor de canais</h3>
+	<p>
+		You can restrict the display of messages to one specific WebSocket
+		channel or all.
+		<br>
+		If you select a specific channel, then the <i>Show handshake</i> button
+		(<img src="images/handshake.png" align="bottom" width="16" height="16" />)
+		becomes enabled. When you click on it, the corresponding HTTP handshake is
+		shown in the Request/Response tab.
+	</p>
+
+	<h3>Diálogo de filtro</h3>
+	<p>
+		In the filter dialog (<img src="images/054.png" align="bottom" width="16" height="16" />)
+		you can further control which messages are displayed.
+	</p>
+
+<h2>Pontos de interrupção</h2>
+<p>
+	You can set custom breakpoints using the <i>Add Custom Breakpoints</i>
+	button (<img src="images/break_add.png" align="bottom" width="16" height="16" />).
+	<br>
+	Alternatively you can use the <i>Right click menu</i>.
+</p>
+
+<h2>Menu do botão direito</h2>
+<p>
+	Clicar com o botão direito sobre uma mensagem de WebSockets faz aparecer um menu que lhe permitirá:
+</p>
+
+	<h3>Excluir da WebSocket</h3>
+	<p>
+		WebSocket connections can be excluded from the WebSockets tab by adding
+		an excluded URL to the
+		<i>Session Properties</i>. Clicar neste item exibe as propriedades da sessão com a URL preenchida.
+		Excluir uma conexão WebSocket não resultará no encerramento da conexão, mas em encaminhá-la sem processamento adicional.
+	</p>
+
+	<h3>Interrupção...</h3>
+	<p>
+		This will bring up the
+		<i>Add Break Point dialog</i> which allows you to set up a custom break point.
+	</p>
+</body>
+</html>

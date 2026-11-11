@@ -1,0 +1,268 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<TITLE>ネットワーク API</TITLE>
+</HEAD>
+<BODY>
+	<H1>ネットワーク API</H1>
+	APIに以下の操作が追加されます：
+
+	<h3>アクション</h3>
+	<ul>
+		<li>
+			addAlias (name* enabled): ローカルサーバー/プロキシのエイリアスを追加します。
+			<ul>
+				<li>name: エイリアスの名前</li>
+				<li>enabled: 有効状態 (true または false)</li>
+			</ul>
+		</li>
+		<li>
+			addHttpProxyExclusion (host* enabled): HTTPプロキシから除外するホストを追加します。
+			<ul>
+				<li>host: ホストの値、正規表現</li>
+				<li>enabled: 有効状態 (true または false)</li>
+			</ul>
+		</li>
+		<li>
+			addLocalServer (address* port* api proxy behindNat decodeResponse removeAcceptEncoding): ローカルサーバー/プロキシを追加します。
+			<ul>
+				<li>address: ローカルサーバー/プロキシのアドレス</li>
+				<li>port: ローカルサーバー/プロキシのポート</li>
+				<li>api: ZAP APIが利用可能かどうか、true または false</li>
+				<li>proxy: ローカルサーバーがプロキシとして動作するかどうか、true または false</li>
+				<li>behindNat: ローカルサーバーがNATの背後にあるかどうか、true または false</li>
+				<li>decodeResponse: レスポンスをデコードするかどうか、true または false</li>
+				<li>removeAcceptEncoding: リクエストヘッダーの Accept-Encoding を削除するかどうか、true または false。</li>
+			</ul>
+		</li>
+		<li>
+			addPassThrough (authority* enabled): ローカルプロキシを通過させる権限を追加します。
+			<ul>
+				<li>authority: 権限の値、正規表現が使用可能</li>
+				<li>enabled: 有効状態 (true または false)</li>
+			</ul>
+		</li>
+		<li>
+			addPkcs12ClientCertificate (filePath* password* index): PKCS#12ファイルに含まれるクライアント証明書を追加します。証明書は自動的にアクティブに設定され使用されます。
+			<ul>
+				<li>filePath: ファイルパス</li>
+				<li>password: ファイルのパスワード</li>
+				<li>index: ファイル内の証明書のインデックス、デフォルトは0</li>
+			</ul>
+		</li>
+		<li>
+			addRateLimitRule (description* enabled* matchRegex matchString requestsPerSecond* groupBy*): レート制限ルールを追加します。
+			<ul>
+				<li>description: ルールを識別するための説明。各ルールには一意の説明が必要です。</li>
+				<li>enabled: 有効状態 (true または false)</li>
+				<li>matchRegex: matchString が正規表現かプレーンな文字列かを決定します: trueまたはfalse。</li>
+				<li>matchString: プレーンな文字列マッチはDNS規約に基づいて処理されます。文字列が1つまたは2つのコンポーネントを持つ場合。 matchRegex が true の場合、これは正規表現です。</li>
+				<li>requestsPerSecond: 1秒あたりの最大リクエスト数</li>
+				<li>groupBy: レート制限を適用する際のホストのグループ化方法: rule または host</li>
+			</ul>
+		</li>
+		<li>generateRootCaCert: サーバー証明書の発行に使用する新しいルートCA証明書を生成します。</li>
+		<li>importRootCaCert (filePath*): サーバー証明書の発行に使用するルートCA証明書をインポートします。
+			<ul>
+				<li>filePath: 証明書と秘密鍵を含むPEMファイルへのファイルシステムパス</li>
+			</ul>
+		</li>
+		<li>
+			removeAlias (name*): エイリアスを削除します。
+			<ul>
+				<li>name: エイリアスの名前</li>
+			</ul>
+		</li>
+		<li>
+			removeHttpProxyExclusion (host*): HTTPプロキシ除外を削除します。
+			<ul>
+				<li>host: ホストの値</li>
+			</ul>
+		</li>
+		<li>
+			removeLocalServer (address* port*): ローカルサーバー/プロキシを削除します。
+			<ul>
+				<li>address: ローカルサーバー/プロキシのアドレス</li>
+				<li>port: ローカルサーバー/プロキシのポート</li>
+			</ul>
+		</li>
+		<li>
+			removePassThrough (authority*): パススルーを削除します。
+			<ul>
+				<li>authority: 権限の値</li>
+			</ul>
+		</li>
+		<li>
+			removeRateLimitRule (description*): レート制限ルールを削除します。
+			<ul>
+				<li>description: ルールの説明</li>
+			</ul>
+		</li>
+		<li>
+			setAliasEnabled (name* enabled): エイリアスが有効かどうかを設定します。
+			<ul>
+				<li>name: エイリアスの名前</li>
+				<li>enabled: 有効状態 (true または false)</li>
+			</ul>
+		</li>
+		<li>
+			setConnectionTimeout (timeout*): 読み取りと接続のタイムアウトを設定します。
+			<ul>
+				<li>timeout: タイムアウト (秒)</li>
+			</ul>
+		</li>
+		<li>
+			setDefaultUserAgent (userAgent*): デフォルトのユーザーエージェントを設定します。
+			<ul>
+				<li>userAgent: デフォルトのユーザーエージェント</li>
+			</ul>
+		</li>
+		<li>
+			setDnsTtlSuccessfulQueries (ttl*): 成功したDNSクエリのTTLを設定します。
+			<ul>
+				<li>ttl: TTL (秒)負の数の場合は永続的にキャッシュします。 0の場合はキャッシュを無効にします。正の数の場合は成功したDNSクエリがキャッシュされる秒数。</li>
+			</ul>
+		</li>
+		<li>
+			setHttpProxy (host* port* realm username password): HTTPプロキシ設定を構成します。
+			<ul>
+				<li>host: ホスト、名前またはアドレス</li>
+				<li>port: ポート</li>
+				<li>realm: 認証レルム</li>
+				<li>username: ユーザー名</li>
+				<li>password: パスワード</li>
+			</ul>
+		</li>
+		<li>
+			setHttpProxyAuthEnabled (enabled*): HTTPプロキシ認証が有効かどうかを設定します。
+			<ul>
+				<li>enabled: 有効状態 (true または false)</li>
+			</ul>
+		</li>
+		<li>
+			setHttpProxyEnabled (enabled*): HTTPプロキシが有効かどうかを設定します。
+			<ul>
+				<li>enabled: 有効状態 (true または false)</li>
+			</ul>
+		</li>
+		<li>
+			setHttpProxyExclusionEnabled (host* enabled*): HTTPプロキシ除外が有効かどうかを設定します。
+			<ul>
+				<li>host: ホストの値</li>
+				<li>enabled: 有効状態 (true または false)</li>
+			</ul>
+		</li>
+		<li>
+			setPassThroughEnabled (authority* enabled): パススルーが有効かどうかを設定します。
+			<ul>
+				<li>authority: 権限の値</li>
+				<li>enabled: 有効状態 (true または false)</li>
+			</ul>
+		</li>
+		<li>
+			setRateLimitRuleEnabled (description*, enabled*): レート制限ルールの有効状態を設定します。
+			<ul>
+				<li>description: ルールの説明</li>
+				<li>enabled: 有効状態 (true または false)</li>
+			</ul>
+		</li>
+		<li>
+			setRootCaCertValidity (validity*): ルートCA証明書の有効期間を設定します。新しいルートCA証明書を生成する際に使用されます。
+			<ul>
+				<li>validity: 生成されるルートCA証明書が有効となる日数</li>
+			</ul>
+		</li>
+		<li>
+			setServerCertValidity (validity*): サーバー証明書の有効期間を設定します。サーバー証明書を生成する際に使用されます。
+			<ul>
+				<li>validity: 生成されるサーバー証明書が有効となる日数</li>
+			</ul>
+		</li>
+		<li>
+			setSocksProxy (host* port* version useDns username password): SOCKSプロキシ設定を構成します。
+			<ul>
+				<li>host: ホスト、名前またはアドレス</li>
+				<li>port: ポート</li>
+				<li>version: SOCKSバージョン</li>
+				<li>useDns: 名前解決をSOCKSプロキシで行うかどうか、trueまたはfalse</li>
+				<li>username: ユーザー名</li>
+				<li>password: パスワード</li>
+			</ul>
+		</li>
+		<li>
+			setSocksProxyEnabled (enabled*): SOCKSプロキシが有効かどうかを設定します。
+			<ul>
+				<li>enabled: 有効状態 (true または false)</li>
+			</ul>
+		</li>
+		<li>
+			setUseClientCertificate (use*): アクティブなクライアント証明書を使用するかどうかを設定します。
+			<ul>
+				<li>use: 使用状態、trueまたはfalse</li>
+			</ul>
+		</li>
+		<li>
+			setUseGlobalHttpState (use*): グローバルHTTP状態を使用するかどうかを設定します。
+			<ul>
+				<li>use: 使用状態、trueまたはfalse</li>
+			</ul>
+		</li>
+	</ul>
+
+	<h3>ビュー</h3>
+	<ul>
+		<li>getAliases: ローカルサーバー/プロキシを識別するために使用されるエイリアスを取得します。</li>
+		<li>getConnectionTimeout: 接続タイムアウトを秒単位で取得します。</li>
+		<li>getDefaultUserAgent: デフォルトのユーザーエージェントを取得します。</li>
+		<li>getDnsTtlSuccessfulQueries: 成功したDNSクエリのTTL (秒単位) を取得します。</li>
+		<li>getHttpProxy: HTTPプロキシを取得します。</li>
+		<li>getHttpProxyExclusions: HTTPプロキシ除外を取得します。</li>
+		<li>getLocalServers: ローカルサーバー/プロキシを取得します。</li>
+		<li>getPassThroughs: ローカルプロキシを通過する権限を取得します。</li>
+		<li>getRateLimitRules: レート制限ルールを取得します。</li>
+		<li>getRootCaCertValidity: ルートCA証明書の有効期間を日数で取得します。新しいルートCA証明書を生成する際に使用されます。</li>
+		<li>getServerCertValidity: サーバー証明書の有効期間を日数で取得します。サーバー証明書を生成する際に使用されます。</li>
+		<li>getSocksProxy: SOCKSプロキシを取得します。</li>
+		<li>isHttpProxyAuthEnabled: HTTPプロキシ認証が有効かどうかを返します。</li>
+		<li>isHttpProxyEnabled: HTTPプロキシが有効かどうかを返します。</li>
+		<li>isSocksProxyEnabled: SOCKSプロキシが有効かどうかを返します。</li>
+		<li>isUseGlobalHttpState: グローバルHTTP状態を使用するかどうかを返します。</li>
+	</ul>
+
+	<h3>その他</h3>
+	<ul>
+		<li>
+			proxy.pac: メインプロキシを経由してプロキシするPACファイルを提供します。
+		</li>
+		<li>rootCaCert: サーバー証明書の発行に使用されるルートCA証明書を取得します。クライアントアプリケーション(ブラウザなど)へのインポートに適しています。</li>
+		<li>
+			setProxy (proxy*): HTTPプロキシ設定を構成します。
+			<ul>
+				<li>proxy: HTTPプロキシ設定を含むJSONオブジェクト。</li>
+			</ul>
+		</li>
+	</ul>
+
+	<h3>ショートカット</h3>
+	<ul>
+		<li>proxy.pac: メインプロキシを経由してプロキシするPACファイルを提供します。</li>
+		<li>
+			setproxy: HTTPプロキシ設定を構成します。
+			<ul>
+				<li>リクエストボディ: HTTPプロキシ設定を含むJSONオブジェクト。</li>
+			</ul>
+		</li>
+	</ul>
+
+	<H2>関連情報</H2>
+	<table>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td><a href="network.html">ネットワーク</a></td>
+			<td>ネットワークアドオンの概要</td>
+		</tr>
+	</table>
+
+</BODY>
+</HTML>

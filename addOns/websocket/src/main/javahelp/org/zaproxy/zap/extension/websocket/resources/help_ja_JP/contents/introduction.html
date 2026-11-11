@@ -1,0 +1,40 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>
+WebSockets
+</title>
+</head>
+<body>
+<h1>WebSockets</h1>
+<p>
+WebSocketsは、WebアプリケーションやWebサイトが、単一のTCP接続上で双方向の全二重通信チャネルを確立するために利用できます。<br>
+軽量なプロトコルを特長としており、開発者がリアルタイムのユースケースを実現できます。 WebSocketsはまた、Ajax、HTTPロングポーリング、またはCometを多用するアプローチに代わる代替手段も提供します。<br>
+</p>
+<p>
+初期のHTTPベースのハンドシェイクの後、TCP接続は開いたまま維持され、アプリケーションが任意のデータを送受信できるようになります。暗号化されたWebSocketチャネルには、多くの場合ポート80または443が使用されます。
+</p>
+<p>
+WebSocket 標準は以下の通りです。
+<dl>
+	<dt><a href="http://www.w3.org/TR/websockets/">The WebSocket API (http://www.w3.org/TR/websockets/)</a></dt>
+	<dd>ブラウザ内のインターフェースを指定します</dd>
+	<dt><a href="https://tools.ietf.org/html/rfc6455">The WebSocket Protocol (RFC6455) (https://tools.ietf.org/html/rfc6455)</a></dt>
+	<dd>TCP上のWebSocketフレームの構造を記述します</dd>
+</dl>
+<p>
+ZAPは以下のことが可能です：
+<ul>
+	<li>WebSocketメッセージをインターセプトして表示する</li>
+	<li>特定の種類のWebSocketメッセージにブレークポイントを設定する</li>
+	<li>WebSocketメッセージのファジング (ブラウザまたはサーバーに大量の無効なデータや予期しないデータを送信すること)</li>
+  <li>WebSocketメッセージを受動的にスキャンし、スクリプトでアラートを発生させる</li>
+</ul>
+
+WebSocketメッセージは、 <a href="tab.html">WebSocketsタブ</a>内に表示されます<a href="#"></a>.<br><br>
+
+WebSocketアドオンは、新しい <a href="script.html">スクリプト</a> と、ZAP  <a href="api.html">API</a>への追加のエンドポイントを追加します。<a href="#"></a>
+
+</body>
+</html>

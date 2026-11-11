@@ -1,0 +1,83 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<TITLE>
+ヘッダーベースセッション管理
+</TITLE>
+</HEAD>
+<BODY>
+<H1>ヘッダーベースセッション管理</H1>
+
+この<a href="authhelper.html">アドオン</a>は、任意の数のヘッダーをサポートする新しいセッション管理方式を追加します。
+<p>
+<a href="browser-auth.html">ブラウザベース認証</a>または<a href="client-script.html">クライアントスクリプト認証</a>と組み合わせて使用される場合、認証の一部として設定されたすべてのCookie、および「auth」または「csrf」という文字列を含む名前のヘッダー (大文字・小文字を無視) も維持します。
+<p>
+ヘッダー値には、以下のトークンを含めることができます：
+
+<table>
+<tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td><code>{%json:path.to.data%}</code></td>
+        <td>JSON認証レスポンスデータ</td>
+</tr>
+<tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td><code>{%env:env_var%}</code></td>
+        <td>環境変数</td>
+</tr>
+<tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td><code>{%script:glob_var%}</code></td>
+        <td>グローバルスクリプト変数</td>
+</tr>
+<tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td><code>{%header:env_var%}</code></td>
+        <td>認証レスポンスヘッダー</td>
+</tr>
+<tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td><code>{%url:key%}</code></td>
+        <td>認証URLパラメーター</td>
+</tr>
+</table>
+
+<H2>自動化フレームワーク</H2>
+
+ヘッダーベースセッション管理は、自動化フレームワークプランの環境セクションで以下のように設定できます：
+<pre>
+      sessionManagement:
+        method: "headers"
+        parameters:                    #  上記で定義されたトークンのいずれかを含むことができる「ヘッダー: 値」のペアのリスト、例：
+          Authorization: "Bearer: {%json:AuthenticationResult.AccessToken%}"
+</pre>
+
+<H2>API</H2>
+
+ヘッダーベースセッション管理は、ZAP API経由で、以下のパラメーターを使用して設定できます：
+<pre>
+    contextId
+    methodName
+    methodConfigParams
+</pre>
+例えば：
+<table border="1">
+  <tr><td>contextId</td><td>1</td></tr>
+  <tr><td>methodName</td><td>headerBasedSessionManagement</td></tr>
+  <tr><td>methodConfigParams</td><td>headers=Authorization:Bearer 8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918</td></tr>
+</table>
+<p>
+API経由でヘッダーベースセッション管理を追加する場合、<code>headers</code> パラメーターは、改行文字: <code>\n</code> で区切られた <code>ヘッダー:値</code> ペアの文字列です。
+<p>
+コアの制限により：
+<ul>
+<li>このアドオンを追加または削除した場合、既存のコンテキストはGUIで更新されません
+<li>ヘッダーベースセッション管理は、API経由でコンテキストに追加できません (ZAP 2.16.1以降で使用される場合を除く)
+</ul>
+これらの制限は将来のリリースで解決される予定です。 
+
+<p>
+最新のコード: <a href="https://github.com/zaproxy/zap-extensions/blob/main/addOns/authhelper/src/main/java/org/zaproxy/addon/authhelper/HeaderBasedSessionManagementMethodType.java">HeaderBasedSessionManagementMethodType.java</a>
+
+</BODY>
+</HTML>

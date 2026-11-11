@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE toc PUBLIC "-//Sun Microsystems Inc.//DTD JavaHelp TOC Version 2.0//EN" "http://java.sun.com/products/javahelp/toc_2_0.dtd">
+<toc version="2.0">
+	<tocitem text="ZAP ユーザーガイド" tocid="toplevelitem">
+		<tocitem text="アドオン" tocid="addons">
+			<tocitem text="自動化フレームワーク" image="automation-icon" target="automation">
+				<tocitem text="GUI" target="automation.gui"/>
+				<tocitem text="オプション" target="automation.options"/>
+				<tocitem text="環境" target="automation.env"/>
+				<tocitem text="認証" target="automation.auth"/>
+				<tocitem text="ジョブ: アドオン" target="automation.addons"/>
+				<tocitem text="ジョブ: アクティブスキャン設定" target="automation.ascanconfig"/>
+				<tocitem text="ジョブ: アクティブスキャンポリシー" target="automation.ascanpolicy"/>
+				<tocitem text="ジョブ: アクティブスキャン" target="automation.ascan"/>
+				<tocitem text="ジョブ: 待機" target="automation.delay"/>
+				<tocitem text="ジョブ: 終了ステータス" target="automation.exitstatus"/>
+				<tocitem text="ジョブ: requestor" target="automation.requestor"/>
+				<tocitem text="テスト" target="automation.tests"/>
+				<tocitem text="テスト: アラート" target="automation.tests.alert"/>
+				<tocitem text="テスト: モニター" target="automation.tests.monitor"/>
+				<tocitem text="テスト: 統計" target="automation.tests.stats"/>
+				<tocitem text="テスト: URL" target="automation.tests.url"/>
+				<tocitem text="このアドオンについて" target="automation.about"/>
+			</tocitem>
+		</tocitem>
+	</tocitem>
+</toc>

@@ -1,0 +1,64 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>
+WebSocket tab
+</title>
+</head>
+<body>
+<h1>WebSocket tab</h1>
+
+<p>
+WebSocket tab memperlihatkan semua pesan dari WebSocket koneksi.
+Sementara ZAP adalah aktif, kunjungi misalnya: <a href="http://browserquest.mozilla.org/">Mozilla PencarianBrowser</a>
+untuk melihat WebSocket pada aktifitas.
+</p>
+
+<h2>Filter</h2>
+	<h3>Pemilih Saluran</h3>
+	<p>
+		You can restrict the display of messages to one specific WebSocket
+		channel or all.
+		<br>
+		If you select a specific channel, then the <i>Show handshake</i> button
+		(<img src="images/handshake.png" align="bottom" width="16" height="16" />)
+		becomes enabled. When you click on it, the corresponding HTTP handshake is
+		shown in the Request/Response tab.
+	</p>
+
+	<h3>Dialog Penyaring</h3>
+	<p>
+		In the filter dialog (<img src="images/054.png" align="bottom" width="16" height="16" />)
+		you can further control which messages are displayed.
+	</p>
+
+<h2>Titik-selaan</h2>
+<p>
+	You can set custom breakpoints using the <i>Add Custom Breakpoints</i>
+	button (<img src="images/break_add.png" align="bottom" width="16" height="16" />).
+	<br>
+	Alternatively you can use the <i>Right click menu</i>.
+</p>
+
+<h2>Klik kanan menu</h2>
+<p>
+	Klik kanan pada pesan WebSocket akan memunculkan menu yang akan mengizinkan anda untuk:
+</p>
+
+	<h3>Tidak termasuk dari WebSocket</h3>
+	<p>
+		WebSocket connections can be excluded from the WebSockets tab by adding
+		an excluded URL to the
+		<i>Session Properties</i>. Klik pada item ini, akan menampilkan sesi properti dengan URL yang sudah terisi.
+		Pengecualian koneksi WebSocket tidak akan berakibat pada penutupan
+		koneksi, melainkan dalam meneruskan tanpa memproses lebih lanjut.
+	</p>
+
+	<h3>Break...</h3>
+	<p>
+		This will bring up the
+		<i>Add Break Point dialog</i> which allows you to set up a custom break point.
+	</p>
+</body>
+</html>

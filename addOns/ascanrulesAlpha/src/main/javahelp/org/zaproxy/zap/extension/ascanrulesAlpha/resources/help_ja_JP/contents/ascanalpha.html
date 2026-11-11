@@ -1,0 +1,46 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<title>
+アクティブスキャンルール - Alpha
+</title>
+</head>
+<body>
+<h1>アクティブスキャンルール - Alpha</h1>
+以下のアルファステータスのアクティブスキャンルールがこのアドオンに含まれています：
+
+<h2 id="id-40015">LDAPインジェクション</h2>
+LDAPインジェクションの可能性があります。攻撃者が認証制御をバイパスし、LDAPディレクトリ内の任意のデータを閲覧および変更できる可能性があります。クライアントまたはサーバーエラーのレスポンスステータスコードが元々返されたメッセージはスキップされます。
+<p>
+最新のコード: <a href="https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/LdapInjectionScanRule.java">LdapInjectionScanRule.java</a>
+<br>
+アラートID: <a href="https://www.zaproxy.org/docs/alerts/40015/">40015</a>.
+
+<h2 id="id-40024">SQLインジェクション - SQLite (時間ベース)</h2>
+このアクティブスキャンルールは、SQLite固有のコマンドをパラメーター値に注入し、サーバーレスポンスのタイミングを分析して、コマンドがサーバー上で効果的に実行されたか (SQLインジェクション攻撃の成功を示す) を確認しようとします。
+<p>
+最新のコード: <a href="https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/SqlInjectionSqLiteTimingScanRule.java">SqlInjectionSqLiteTimingScanRule.java</a>
+<br>
+アラートID: <a href="https://www.zaproxy.org/docs/alerts/40024/">40024</a>.
+
+<h2 id="id-40039">Webキャッシュ欺瞞</h2>
+このルールはWebキャッシュデセプション脆弱性の識別を試みます。元のURIに静的パスを追加することで機密性の高いユーザー情報が漏洩する可能性があるかどうかをチェックします。
+<ul>
+    <li>このルールを使用する前にユーザーは認証されている必要があります</li>
+</ul>
+最新のコード: <a href="https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/WebCacheDeceptionScanRule.java">WebCacheDeceptionScanRule.java</a>
+<br>
+アラートID: <a href="https://www.zaproxy.org/docs/alerts/40039/">40039</a>.
+
+<h2 id="id-100044">疑わしい入力変換</h2>
+これはアクティブスキャンルール (スクリプト) です。テンプレートインジェクション、式評価、引用符の消費、Unicode正規化に関連する問題など、潜在的なセキュリティ脆弱性を示す可能性のある様々な種類の疑わしい入力変換を検出します。
+<p>
+このルールは、Albinowax氏によるBurp Suite用ActiveScan++拡張機能に含まれる「Suspect Transform」チェック (<a href="https://github.com/albinowax/ActiveScanPlusPlus/blob/master/src/burp/SuspectTransform.java">SuspectTransform.java</a>) を基に作成されています。.
+
+<p>
+最新のコード: <a href="https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/zapHomeFiles/scripts/scripts/active/SuspiciousInputTransformation.js">SuspiciousInputTransformation.js</a>
+<br>
+アラートID: <a href="https://www.zaproxy.org/docs/alerts/100044/">100044</a>.
+
+</body>
+</html>

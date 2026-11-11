@@ -1,0 +1,57 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<TITLE>GraphQL バリアント</TITLE>
+</HEAD>
+<BODY>
+	<H1>GraphQL バリアント</H1>
+
+	GraphQLバリアントは、以下の2つの役割を担っています：
+	<ol>
+		<li>サイトツリーにGraphQLリクエストのノードを正しく表示すること。</li>
+		<li>GraphQLクエリにペイロードを注入できるようにすること (アクティブスキャン入力ベクターのサポート)。</li>
+	</ol>
+
+	以下のセクションでは、これらの各機能について少し詳しく説明します。
+
+	<h2>サイトツリーにおける表現</h2>
+
+	ZAPを介してプロキシされた一意のGraphQLリクエストは、サイトツリーに表示されます。同じオペレーションを持つリクエストは、共通のノードの下に配置されます。同じフィールドを持つ2つのクエリは、同じノードで表現されます。唯一の例外は、クエリがインライン引数と変数の両方を使用して送信される場合です。この場合、それらを区別するために、それぞれ『0』または『1』のプレフィックスが付加されます。
+	<br>
+たとえば、次の図は、2つのリクエストがサイトツリーでどのように表現されるかを示しています。
+	<br>
+	<img src="images/sitesTreeExample.png">
+
+	<h2>アクティブスキャンの入力ベクトル</h2>
+
+	ZAPを介してプロキシされたすべてのクエリで、インライン引数に値が注入されます。クエリが変数を使用している場合、変数はインライン引数として置き換えられ、変数定義は削除されます。
+	<br>
+リクエストがJSONとして送信される場合、組み込みのJSON入力ベクターハンドラーも (無効化されていない限り) 機能します。
+
+	<h2>関連情報</h2>
+	<table>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td><a href="graphql.html">GraphQL</a></td>
+			<td>GraphQL アドオンの概要</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td><a href="options.html">GraphQL オプション</a></td>
+			<td>オプションのパラメーターに関する情報</td>
+		</tr>
+        <tr>
+            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+            <td><a href="automation.html">GraphQL 自動化</a></td>
+            <td>自動化フレームワーク対応に関する情報</td>
+        </tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td><a href="alerts.html">GraphQL アラート</a></td>
+			<td>このアドオンによって発生するアラートに関する情報</td>
+		</tr>
+	</table>
+
+</BODY>
+</HTML>

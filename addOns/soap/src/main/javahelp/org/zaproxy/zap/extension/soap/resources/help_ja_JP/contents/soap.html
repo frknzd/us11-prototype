@@ -1,0 +1,59 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>
+SOAP サポート
+</title>
+</head>
+<body>
+<h1>SOAP サポート</h1>
+このアドオンは、SOAP エンドポイントを含む WSDLファイルをインポートおよびスキャンします。
+<br><br>
+また、 <a href="automation.html">自動化フレームワーク</a>をサポートします<a href="#"></a>.
+
+<h2>インポート</h2>
+アドオンは、スコープ内にある限り、SOAP定義を自動的に検出してスパイダーします。
+<br><br>
+「インポート」メニューに以下の項目が追加されます：
+<ul>
+<li>WSDLファイルをインポート</li>
+</ul>
+このダイアログでは、インポートするメッセージの数を制限することができます。
+値は <code></code> (デフォルトでは) すべてのメッセージがインポートされます。
+インポート時にはリダイレクトが追跡されるため、これはあくまで目安に過ぎません。
+<br><br>
+ローカルファイルシステムまたはURLからWSDLファイルをインポートする操作も、APIアクション (<code>importFile</code> / <code>importUrl</code>) として利用可能です。これには、オプションの <code>maxMessages</code> パラメータが含まれます。
+<br><br>
+<b>注意:</b> このアドオンのバージョン 6以降では、エンコードされたURLのみがサポートされます。
+
+<h3>フォームハンドラーアドオンのサポート</h3>
+SOAP アドオンは、フォームハンドラーアドオン経由でフィールド名に基づくデフォルトパラメーター値のオーバーライドをサポートします。
+例えば、
+<br>
+<img src="images/formHandlerExample.png" alt="フォームハンドラーの例" width="300">
+
+最新のコード: <a href="https://github.com/zaproxy/zap-extensions/tree/main/addOns/soap">SOAP サポート</a>
+
+<h2>統計</h2>
+このアドオンは以下の統計を管理します：
+<ul>
+    <li>soap.urls.added: インポートされたWSDLファイルから追加されたURL (または SOAP アクション) の総数。</li>
+</ul>
+
+<h2>関連情報</h2>
+<table>
+    <tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;
+        <td><a href="alerts.html">アラートおよびルールの詳細</a>
+        <td>SOAP サポートアドオンのアラートおよびルールの詳細
+    </tr>
+    <tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;
+        <td><a href="automation.html">SOAP 自動化</a>
+        <td>自動化フレームワーク対応に関する情報
+    </tr>
+</table>
+
+</body>
+</html>

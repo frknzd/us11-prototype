@@ -1,0 +1,116 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Selenium API</title>
+</head>
+<body>
+	<h1>Selenium API</h1>
+
+	'selenium' APIを使用すると、必要なWebDriver群およびバイナリへのパスを設定および表示できます。
+
+	<h2>APIアクション/ビュー</h2>
+	<table border="2">
+		<tr>
+			<th>名前</th>
+			<th>タイプ</th>
+			<th>パラメーター</th>
+			<th>説明</th>
+		</tr>
+		<tr>
+			<td>getBrowserArguments</td>
+			<td>ビュー</td>
+			<td>browser*</td>
+			<td>ブラウザ引数を取得します。</td>
+		</tr>
+		<tr>
+			<td>optionChromeBinaryPath</td>
+			<td>ビュー</td>
+			<td></td>
+			<td>現在のChromeバイナリへのパスを返します。</td>
+		</tr>
+		<tr>
+			<td>optionChromeDriverPath</td>
+			<td>ビュー</td>
+			<td></td>
+			<td>現在のChromeDriverへのパスを返します。</td>
+		</tr>
+		<tr>
+			<td>optionFirefoxBinaryPath</td>
+			<td>ビュー</td>
+			<td></td>
+			<td>現在のFirefoxバイナリへのパスを返します。</td>
+		</tr>
+		<tr>
+			<td>optionFirefoxDriverPath</td>
+			<td>ビュー</td>
+			<td></td>
+			<td>現在のFirefoxドライバー (geckodriver) へのパスを返します。</td>
+		</tr>
+		<tr>
+			<td>addBrowserArgument</td>
+			<td>アクション</td>
+			<td>browser* argument* enabled</td>
+			<td>ブラウザ引数を追加します。</td>
+		</tr>
+
+		<tr>
+			<td>launchBrowser</td>
+			<td>アクション</td>
+			<td>browser*</td>
+			<td>ZAPをプロキシとして使用してブラウザを起動し、手動で使用します。</td>
+		</tr>
+		<tr>
+			<td>removeBrowserArgument</td>
+			<td>アクション</td>
+			<td>browser* argument*</td>
+			<td>ブラウザ引数を削除します。</td>
+		</tr>
+		<tr>
+			<td>setBrowserArgumentEnabled</td>
+			<td>アクション</td>
+			<td>browser* argument* enabled* </td>
+			<td>ブラウザ引数を有効にするかどうかを設定します。</td>
+		</tr>
+		<tr>
+			<td>setOptionChromeBinaryPath</td>
+			<td>アクション</td>
+			<td>文字列*</td>
+			<td>現在のChromeバイナリへのパスを設定</td>
+		</tr>
+		<tr>
+			<td>setOptionChromeDriverPath</td>
+			<td>アクション</td>
+			<td>文字列*</td>
+			<td>現在のChromeDriverへのパスを設定</td>
+		</tr>
+		<tr>
+			<td>setOptionFirefoxBinaryPath</td>
+			<td>アクション</td>
+			<td>文字列*</td>
+			<td>現在のFirefoxバイナリへのパスを設定</td>
+		</tr>
+		<tr>
+			<td>setOptionFirefoxDriverPath</td>
+			<td>アクション</td>
+			<td>文字列*</td>
+			<td>現在のFirefoxドライバー (geckodriver) へのパスを設定</td>
+		</tr>
+	</table>
+	アスタリスク (*) 付きのパラメータは必須です。 
+	<h2>関連情報</h2>
+	<table>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td><a href="intro.html">Selenium</a></td>
+			<td>Seleniumの概要について</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td><a href="options.html">オプション - Selenium画面</a></td>
+			<td>Seleniumオプションの概要について</td>
+		</tr>
+	</table>
+
+</body>
+</html>

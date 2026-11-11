@@ -1,0 +1,37 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<TITLE>
+自動化フレームワーク - delay ジョブ
+</TITLE>
+</HEAD>
+<BODY>
+<H1>自動化フレームワーク - delay ジョブ</H1>
+
+このジョブは、指定された時間待機します。ただし、特定の条件のいずれかが満たされた場合は待機を終了します。<br>
+これは、ZAP経由でプロキシされる回帰テストを待機するために使用でき、アプリケーションをより徹底的に探索するために役立ちます。
+<p>
+この内容は、動画「<a href="https://youtu.be/hcftgjz_Vgc">ZAP Chat 12 Automation Framework Part 6 - Delays and Active Scan</a>」で解説されています。
+<p>
+time パラメータは、<code>hh:mm:ss</code>、<code>mm:ss</code>、<code>ss</code> の形式をサポートします。したがって、"5" は 5 秒、"1:30" は 1 分 30 秒、"2:20:30" は 2 時間 20 分 30 秒です。
+<p>
+サポートされる条件は以下の通りです：
+<ul>
+<li>オプションの fileName パラメータで与えられたファイルの作成
+<li>静的メソッドの呼び出し: <code>org.zaproxy.addon.automation.jobs.DelayJob.setEndJob(true);</code>
+<li>API エンドポイントの呼び出し: <code>automation / action / endDelayJob</code>
+</ul>
+
+<H2>YAML</H2>
+
+<pre>
+  - type: delay                        # 設定された期間、またはイベント (ファイル作成、静的メソッド呼び出し、APIエンドポイント呼び出し) が発生するまでプランを一時停止します
+    parameters:
+      time:                            # 文字列: 待機する時間、形式は ['hh:mm:ss', 'mm:ss', 'ss'] のいずれか、デフォルト: 0
+      fileName:                        # 文字列: 作成された場合にジョブを早期に終了させるファイルの名前、デフォルト: 空
+    enabled:                           # Bool: falseに設定されている場合、ジョブは実行されません、デフォルト: true
+    alwaysRun:                         # Bool: 設定され、ジョブが有効な場合、プランが早期に終了しても実行されます、デフォルト: false
+</pre>
+
+</BODY>
+</HTML>

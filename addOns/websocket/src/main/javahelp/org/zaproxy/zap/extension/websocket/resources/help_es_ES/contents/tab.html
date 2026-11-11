@@ -1,0 +1,61 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>
+Pestaña WebSocket
+</title>
+</head>
+<body>
+<h1>Pestaña WebSocket</h1>
+
+<p>
+La pestaña WebSockets muestra todos los mensajes de las conexiones WebSocket. Mientras que ZAP está activa, visita por ejemplo: <a href="http://browserquest.mozilla.org/">Mozilla's BrowserQuest</a> para ver WebSockets en acción.
+</p>
+
+<h2>Filtros</h2>
+	<h3>Selector de canal</h3>
+	<p>
+		You can restrict the display of messages to one specific WebSocket
+		channel or all.
+		<br>
+		If you select a specific channel, then the <i>Show handshake</i> button
+		(<img src="images/handshake.png" align="bottom" width="16" height="16" />)
+		becomes enabled. When you click on it, the corresponding HTTP handshake is
+		shown in the Request/Response tab.
+	</p>
+
+	<h3>Cuadro de diálogo de filtro</h3>
+	<p>
+		In the filter dialog (<img src="images/054.png" align="bottom" width="16" height="16" />)
+		you can further control which messages are displayed.
+	</p>
+
+<h2>Puntos de interrupción</h2>
+<p>
+	You can set custom breakpoints using the <i>Add Custom Breakpoints</i>
+	button (<img src="images/break_add.png" align="bottom" width="16" height="16" />).
+	<br>
+	Alternatively you can use the <i>Right click menu</i>.
+</p>
+
+<h2>Menú de clic derecho</h2>
+<p>
+	Al hacer clic derecho sobre un mensaje WebSocket se abrirá un menú que le permitirá:
+</p>
+
+	<h3>Excluir de WebSocket</h3>
+	<p>
+		WebSocket connections can be excluded from the WebSockets tab by adding
+		an excluded URL to the
+		<i>Session Properties</i>. Al hacer clic en este elemento, abre las propiedades de la sesión con el URL ya precargado.
+		Excluir una conexión WebSocket no resultará en el cierre de la conexión, sino será reenviada sin que se siga procesando.
+	</p>
+
+	<h3>Interrupción...</h3>
+	<p>
+		This will bring up the
+		<i>Add Break Point dialog</i> which allows you to set up a custom break point.
+	</p>
+</body>
+</html>

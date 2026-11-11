@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE index
+  PUBLIC "-//Sun Microsystems Inc.//DTD JavaHelp Index Version 1.0//EN"
+         "http://java.sun.com/products/javahelp/index_2_0.dtd">
+
+<index version="2.0">
+    <indexitem text="ファザー 概念" target="addon.fuzzer.concepts" />
+    <indexitem text="ファザーダイアログ" target="addon.fuzzer.dialogue"/>
+    <indexitem text="ファザー 位置プロセッサダイアログ" target="addon.fuzzer.locations"/>
+    <indexitem text="ファザー HTTPメッセージプロセッサ" target="addon.fuzzer.httpmessageprocessors"/>
+    <indexitem text="ファザー ペイロードダイアログ" target="addon.fuzzer.payloads"/>
+    <indexitem text="ファザー ペイロードプロセッサダイアログ" target="addon.fuzzer.processors"/>
+    <indexitem text="ファザー オプション" target="addon.fuzzer.options"/>
+    <indexitem text="ファザー タブ" target="addon.fuzzer.tab"/>
+</index>

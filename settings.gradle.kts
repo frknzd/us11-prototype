@@ -1,0 +1,144 @@
+
+pluginManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+plugins {
+    id("io.github.ben-manes.versions.settings") version "0.66.0"
+}
+
+rootProject.name = "zap-extensions"
+
+val addOnsProjectName = "addOns"
+include(addOnsProjectName)
+include("testutils")
+include("testutilscore")
+
+// Keep the add-ons in alphabetic order.
+val addOns =
+    mutableListOf(
+        "accessControl",
+        "alertFilters",
+        "allinonenotes",
+        "ascanrules",
+        "ascanrulesAlpha",
+        "ascanrulesBeta",
+        "authhelper",
+        "authstats",
+        "automation",
+        "beanshell",
+        "browserView",
+        "bruteforce",
+        "bugtracker",
+        "callgraph",
+        "callhome",
+        "client",
+        "commonlib",
+        "coreLang",
+        "custompayloads",
+        "database",
+        "dev",
+        "diff",
+        "directorylistv1",
+        "directorylistv2_3",
+        "directorylistv2_3_lc",
+        "domxss",
+        "encoder",
+        "evalvillain",
+        "exim",
+        "formhandler",
+        "foxhound",
+        "frontendscanner",
+        "fuzz",
+        "fuzzdb",
+        "gettingStarted",
+        "graaljs",
+        "graphql",
+        "groovy",
+        "grpc",
+        "highlighter",
+        "httpsInfo",
+        "imagelocationscanner",
+        "insights",
+        "invoke",
+        "jruby",
+        "jsonview",
+        "jython",
+        "kotlin",
+        "llm",
+        "mcp",
+        "network",
+        "oast",
+        "onlineMenu",
+        "openapi",
+        "packpentester",
+        "packscanrules",
+        "paramdigger",
+        "params",
+        "plugnhack",
+        "postman",
+        "pscan",
+        "pscanrules",
+        "pscanrulesAlpha",
+        "pscanrulesBeta",
+        "quickstart",
+        "regextester",
+        "restextraction",
+        "replacer",
+        "reports",
+        "requester",
+        "retest",
+        "retire",
+        "reveal",
+        "revisit",
+        "saml",
+        "scanpolicies",
+        "scripts",
+        "selenium",
+        "sequence",
+        "soap",
+        "spider",
+        "spiderAjax",
+        "sqliplugin",
+        "sse",
+        "svndigger",
+        "tips",
+        "todo",
+        "tokengen",
+        "viewstate",
+        "wappalyzer",
+        "webdrivers",
+        "webdrivers:webdriverlinux",
+        "webdrivers:webdrivermacos",
+        "webdrivers:webdriverwindows",
+        "websocket",
+        "zest",
+    )
+
+addOns.forEach { include("$addOnsProjectName:$it") }
+
+// Test add-ons are found by the convention <add-on>/<add-on>Test
+addOns.filter { !it.contains(":") }
+    .filter { File(settingsDir, "$addOnsProjectName/$it/${it}Test").isDirectory }
+    .forEach { include("$addOnsProjectName:$it:${it}Test") }
+
+rootProject.children.forEach { project -> setUpProject(settingsDir, project) }
+
+fun setUpProject(
+    parentDir: File,
+    project: ProjectDescriptor,
+) {
+    project.projectDir = File(parentDir, project.name)
+    project.buildFileName = "${project.name}.gradle.kts"
+
+    if (!project.projectDir.isDirectory) {
+        throw AssertionError("Project ${project.name} has no directory: ${project.projectDir}")
+    }
+    if (!project.buildFile.isFile) {
+        throw AssertionError("Project ${project.name} has no build file: ${project.buildFile}")
+    }
+    project.children.forEach { it -> setUpProject(it.parent!!.projectDir, it) }
+}

@@ -1,0 +1,80 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<TITLE>
+認証ヘルパー
+</TITLE>
+</HEAD>
+<BODY>
+<H1>認証ヘルパー</H1>
+
+このアドオンは、ZAPでの認証処理の特定と設定を支援します。<br>
+<p>
+
+このアドオンは、さまざまな方法で使用できます：
+<ul>
+<li>認証機能を受動的に識別する。
+<li>新しいブラウザベースの認証メカニズムをサポートする。
+<li>検出された認証機能の処理をZAPに自動的に設定する。
+<li>詳細な認証レポートを生成する。
+</ul>
+
+現在サポートされている機能は以下の通りです：
+<ul>
+<li><a href="auth-report-json.html">認証レポート (JSON)</a>
+<li><a href="auth-req-id.html">認証リクエストの識別</a>
+<li><a href="auth-tester.html">認証テスター</a>
+<li><a href="autodetect-auth.html">認証の自動検出</a>
+<li><a href="autodetect-session.html">セッション管理の自動検出</a>
+<li><a href="automation.html">自動化フレームワーク対応</a>
+<li><a href="browser-auth.html">ブラウザベース認証</a>
+<li><a href="client-script.html">クライアントスクリプト認証</a>
+<li><a href="session-header.html">ヘッダーベースセッション管理</a>
+<li><a href="oauth2-auth.html">OAuth2 Authentication</a>
+<li><a href="session-mgmt-id.html">セッション管理の特定</a>
+<li><a href="verification-id.html">検証の特定</a>
+</ul>
+
+<p>
+このアドオンは現在、独自に探索 (エクスプローリング) を実行しません。ZAP経由でプロキシされるリクエスト (例: 手動制御のブラウザ、または統合テスト経由) またはZAPが生成するリクエスト (例: 従来型またはAJAXスパイダー経由) に依存します。
+<p>
+<a href="auth-tester.html">認証テスター</a>ダイアログを使用して、対象アプリケーションの認証処理をZAPが自動的に設定できるかを確認できます。
+<p>
+自動化フレームワーク経由でZAPの認証処理を自動的に設定することも可能です。環境にログインURLとユーザー資格情報を指定するだけで済みます。
+<pre>
+env:
+  contexts:
+  - name: "target"
+    urls:
+    - https://example.com
+    includePaths: []
+    excludePaths: []
+    authentication:
+      method: "browser"
+      parameters: 
+        loginPageUrl: "https://example.com/login"
+      verification:
+        method: "autodetect"
+    sessionManagement:
+      method: "autodetect"
+    users:
+    - name: "test@example.com"
+      credentials:
+        username: "test@example.com"
+        password: "password123"
+</pre>
+
+<H3>リンク</H3>
+<table>
+<tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td><a href="https://www.zaproxy.org/blog/2023-01-19-authentication-help/">ZAPブログ投稿: Authentication Help</a></td>
+</tr>
+<tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td><a href="https://www.zaproxy.org/blog/2023-05-23-authentication-tester/">ZAPブログ投稿: Authentication Tester Dialog</a></td>
+</tr>
+</table>
+
+</BODY>
+</HTML>

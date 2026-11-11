@@ -1,0 +1,111 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>
+クイックスタート
+</title>
+</head>
+<body>
+<h1>クイックスタート</h1>
+
+<p>
+	「クイックスタート」タブは、Webアプリケーションを迅速にテストするための簡単な方法を提供します。<br>
+画面上部には、以下の画面へ遷移するための3つのボタンが表示されます。
+</p>
+
+<h2>自動スキャン</h2>
+
+「自動スキャン」画面では、アプリケーションに対して自動スキャンを開始できます。以下にURLを入力し、「攻撃」を押すだけです。
+<br>
+重要: テストの許可を明示的に取得したアプリケーションに対してのみ実行してください。
+
+<h3>攻撃対象 URL</h3>
+
+これは攻撃したいアプリケーションのURLで、「http://」または「https://」から始まります。<br>
+攻撃を続行するには、ZAPがこのURLにアクセスできる必要があります。
+<br><br>
+ZAP will crawl from the URL specified but will remove a trailing slash from the URL before starting to attack.
+This is because https://example.com/test/ is treated as a leaf node internally, which would mean that ZAP would not attack
+URLs like https://example.com/test/1 etc.
+
+<h3>Scan Policy</h3>
+
+The scan policy to use when performing the active scan.
+Note that the policies will not be shown dynamically, any added/removed policies will be missing until a restart is done.
+
+<h3>従来のスパイダーを使用</h3>
+
+従来のスパイダーは、HTMLページ内のリンクを見つけることによってアプリケーションを探索します。 非常に高速ですが、JavaScriptを多用するアプリケーションには対応できません。 
+
+<h3>Use modern spider</h3>
+
+The modern spider explores the application by launching the browser you have chosen and clicking on the links it finds.
+It is slower than the traditional spider but handles JavaScript well.<br>
+This option is only shown if at least one modern spider add-on is installed.
+<br><br>
+Two modern spiders are available:
+<ul>
+<li><b>Ajax Spider</b>: available if the Ajax Spider add-on is installed.
+<li><b>Client Spider</b>: available if the Client Side Integration add-on is installed.
+</ul>
+When both are installed, a drop-down lets you choose which one to use.
+ZAP will remember the last spider and browser you chose when you restart it.
+<br><br>
+The conditional options available are:
+<ul>
+<li>しない: 従来のスパイダーを使用する必要があります
+<li>モダンの場合: ZAPがターゲットをモダンアプリとして識別した際に実行されます - この場合は従来のスパイダーを使用してください
+<li>常に: このオプションを選択した場合、従来のスパイダーを実行する必要はありません
+</ul>
+
+<h2>手動探索</h2>
+
+「手動探索」画面では選択したブラウザを起動でき、ZAP経由でプロキシしながらアプリケーションを探索できます。プルダウンから使用したいブラウザを選択し、「ブラウザを起動」ボタンを押してください。<br>
+この方法で起動されたブラウザは、ZAP経由でプロキシするように設定され、証明書エラーを無視するため、 ZAPのルートCA証明書をインポートする必要はありません。<br>
+ZAPは、再起動時に前回選択したブラウザを記憶します。<br><br>
+ツールバーにもボタンが追加され、最後に選択されたブラウザが起動されます。アイコンは、該当するブラウザを示すように変化します。 <br><br> 
+注: ZAPがリッスンしているアドレスやポートを変更すると、起動されたブラウザは動作を停止します。
+<p>
+Seleniumアドオンがインストールされていない場合は、ブラウザをZAP経由でプロキシするように手動で設定するための手順が表示されます。
+
+<h3>探索対象 URL</h3>
+
+これは探索したいアプリケーションのURLで、「http://」または「https://」から始まります。<br>
+ZAPがこのURLにアクセスできる必要があります。
+
+<h3>HUDを有効化</h3>
+
+ZAP Heads Up Display (HUD) は、ZAPの主要機能をブラウザで利用できるようにします。 
+Webセキュリティ初心者に最適で、経験豊富なペンテスターがアプリケーションの機能に集中しながら、重要なセキュリティ情報と機能を活用することも可能にします。 <br>
+このオプションは、HUDアドオンがインストールされている場合に有効になります。アドオンがインストールされていない場合は、ZAP マーケットプレイスから無料でダウンロードしてインストールできます。
+
+<h2>詳細情報</h2>
+
+「詳細情報」画面では、ZAPについてさらに学ぶためのローカルおよびオンラインリソースへのリンクが提供されます。
+
+<h2>ニュース</h2>
+
+3つのボタンの下には、ときどきニュース項目が表示されます。赤い「x」をクリックすると、現在のニュース項目が非表示になります。
+
+<h2>関連情報</h2>
+<table>
+	<tr>
+		<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+		<td><a href="cmdline.html">コマンドライン</a></td>
+		<td>コマンドライン引数の説明</td>
+	</tr>
+	<tr>
+		<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+		<td><a href="zapit.html">ZAPit</a></td>
+		<td>指定されたURLのクイック「偵察 (reconnaissance)」スキャン</td>
+	</tr>
+	<tr>
+		<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+		<td><a href="launchoptions.html">起動オプション</a></td>
+		<td>クイックスタートの起動オプション</td>
+	</tr>
+</table>
+
+</body>
+</html>

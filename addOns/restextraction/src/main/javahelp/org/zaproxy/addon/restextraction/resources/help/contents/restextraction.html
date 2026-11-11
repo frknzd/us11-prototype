@@ -1,0 +1,131 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<TITLE>
+REST Extraction
+</TITLE>
+</HEAD>
+<BODY>
+<H1>REST Extraction</H1>
+This add-on maps the interface of a REST API while you use ZAP as a proxy. You tell it which API to
+watch and what its endpoints look like, and it records every call that goes through ZAP: the HTTP
+method, the values in the URL, how often each endpoint was called, and the status code, headers and
+body of the response.
+
+<p>
+It only observes. Requests and responses are passed on unchanged and are never blocked.
+
+<H2>The REST Extraction tab</H2>
+The tab is next to History, Search, Alerts and Output. If you do not see it, click the green plus
+next to those tabs and select REST Extraction. The left side is for input and shows every API you
+added as a tree, with its endpoint patterns under it. The right side shows the calls and the
+documentation of what is selected in the tree. Drag the line between the two sides to make one of them wider.
+The help button at the top right, or F1, opens this page.
+
+<H2>1. Add an API</H2>
+Type the base URL of the API in <b>Base URL of the API</b> and click <b>Add API</b>, for example:
+<pre>https://jsonplaceholder.typicode.com</pre>
+The base URL needs a scheme and a host. It may have a port and a base path, such as
+<code>https://example.com:8443/api/v1</code>, but no query (<code>?</code>) or fragment
+(<code>#</code>). <code>http</code> and <code>https</code> are different APIs. The host is not case
+sensitive, and <code>https://example.com</code> and <code>https://example.com:443</code> are the same
+API.
+
+<H2>2. Add endpoint patterns</H2>
+Select the API in the tree, type a pattern in <b>Endpoint pattern</b> and click <b>Add endpoint</b>.
+A pattern is the path of an endpoint, relative to the base URL of the API. Write a part of the path
+that changes from call to call as a name in square brackets:
+<pre>/posts/[POST_ID]/comments</pre>
+This pattern matches <code>/posts/1223/comments</code> and <code>/posts/abcd/comments</code>, and the
+report shows <code>POST_ID = 1223</code> and <code>POST_ID = abcd</code>.
+
+<p>
+Rules for a pattern:
+<ul>
+<li>It starts with <code>/</code>. Type only the path, not the full URL.</li>
+<li><code>[NAME]</code> always stands for one whole part of the path. <code>/files/[ID].json</code>
+is not allowed.</li>
+<li>A name has letters, digits and <code>_</code> only, and is used once per pattern. Names are case
+sensitive: <code>[id]</code> and <code>[ID]</code> are different.</li>
+<li>The path is case sensitive: <code>/Posts</code> is not <code>/posts</code>.</li>
+<li>One <code>/</code> at the end is ignored, in the pattern and in the calls.</li>
+<li>The query of a call is ignored: <code>/posts/1/comments?_limit=5</code> counts as
+<code>/posts/1/comments</code>.</li>
+<li>Write a space in a fixed part as <code>%20</code>. Values are shown decoded, so
+<code>/users/John%20Doe</code> gives <code>John Doe</code>.</li>
+</ul>
+When a base URL or a pattern is not valid, or was added before, a message in red under the fields says
+why and nothing is added. The message goes away as soon as you change the text.
+
+<p>
+A call that fits two patterns, such as <code>/posts/[POST_ID]</code> and <code>/posts/latest</code>,
+is recorded under both.
+
+<H2>3. Start and stop</H2>
+Select the API (or one of its endpoints) and click <b>Start</b>. From then on every response that goes through the ZAP proxy
+and fits one of the patterns is recorded. The button now says <b>Stop</b>. Each API is started and
+stopped on its own, and the button always shows the state of the selected API. The tree shows for
+every API whether it is running and how many calls it recorded, for example
+<code>https://jsonplaceholder.typicode.com (running, 12 calls)</code>, and for every endpoint its own
+number of calls.
+
+<p>
+Stop keeps what was recorded. Calls made before Start or after Stop are not recorded, and neither is
+traffic that is already in the History tab.
+
+<H2>4. Read the calls and the documentation</H2>
+Select an API in the tree to see all its calls, or one of its endpoints to see only the calls of that
+endpoint. The right side has two tabs, and both update while calls come in.
+
+<p>
+<b>Calls</b> shows one row per call: the time, the method, the status code, the endpoint and the value
+of every <code>[NAME]</code>. Redirects, client errors (4xx) and server errors (5xx) have their own
+colour. Click a column header to sort the calls by that column, and click it again to reverse the
+order. Above the table you can show only the calls of one method, for example only POST, and type
+a text to show only the calls that contain it in one of the columns, such as
+<code>POST_ID = 1</code> or <code>404</code> (upper and lower case are the same). Next to it the
+number of calls is shown, for example <code>3 of 12 calls</code> while a filter hides some.
+Select a row to see the response headers of that call below the table. Tick <b>Full body</b>
+to also see its response body there. A JSON body is indented; a body that is not complete JSON, like
+one that was cut, is shown as it was sent. A body longer than 64 KB (65 536 characters) is cut and
+ends with <code>[cut off after 64 KB]</code>. A body that is not text, such as an image, is shown as
+<code>[binary, not shown]</code>.
+
+<p>
+<b>Documentation</b> is the readable documentation of the API:
+<ul>
+<li>the base URL of the API as the heading;</li>
+<li>one section per endpoint pattern;</li>
+<li>per endpoint the methods that were used and how often, for example
+<code>GET: 3, POST: 1</code>;</li>
+<li>per variable the values it had and in how many calls, for example
+<code>Values of POST_ID: 1 (3 calls), abcd (1 call)</code>;</li>
+<li>per call the method, the status code, the value of every <code>[NAME]</code> and the response
+headers.</li>
+</ul>
+Lines longer than 100 characters are continued on the next line. The documentation shows no response
+bodies, so it stays fast with many calls; the body of a call is in the Calls tab.
+
+<p>
+Calls with any status code are recorded, also 404 and 500. Methods other than GET, POST, PUT,
+DELETE, PATCH, HEAD and OPTIONS are counted as OTHER.
+
+<H2>5. Remove and clear</H2>
+Select an API or an endpoint in the tree and click <b>Remove</b>, press the Delete key or right-click
+it and choose <b>Remove</b>. Removing an API removes its endpoints and recorded calls too, and its
+base URL can be added again afterwards. <b>Clear calls</b> forgets the recorded calls of the selected
+API, or of the selected endpoint only, and keeps the endpoints; a running API keeps recording. When recorded calls would be lost,
+the add-on asks first.
+
+<H2>Good to know</H2>
+<ul>
+<li>The recorded data is kept while ZAP runs, also when you start a new ZAP session. It is gone
+when ZAP is closed.</li>
+<li>For an HTTPS API the client has to trust the ZAP root certificate, as for all proxied HTTPS
+traffic.</li>
+<li>When ZAP runs without a GUI (daemon mode) the add-on lets all traffic pass and records nothing,
+because APIs and patterns can only be added in this tab.</li>
+</ul>
+
+</BODY>
+</HTML>

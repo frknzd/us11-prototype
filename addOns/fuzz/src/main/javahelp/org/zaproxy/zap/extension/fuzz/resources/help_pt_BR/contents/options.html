@@ -1,0 +1,85 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>
+Tela de opções de Fuzz
+</title>
+</head>
+<body>
+<h1>Tela de opções do Fuzzer</h1>
+<p>
+This screen allows you to configure the <a href="concepts.html">fuzzing</a> options:
+
+<h3>Default Category</h3>
+The category that will initially be selected when the <a href="dialogue.html">Fuzz dialog</a> is displayed.
+
+<h3>Add Custom Fuzz File</h3>
+Allows you to add your own files to be used when fuzzing.<br>
+These should be text files with one payload per line.<br>
+Files are added to the 'fuzzers' directory underneath the ZAP home directory.
+
+<h3>Finished Fuzzers in UI</h3>
+It defines the numbers of fuzzers (that have completed their execution)
+visible in the fuzzer tab.
+
+<h3>Retries on IO Error</h3>
+The number of retries when an input/output error occurs sending a request to the target.
+
+<h3>Max. Errors Allowed</h3>
+If the number of errors exceed this limit, the fuzzer will stop its execution.
+
+<h3>Payload Replacement Strategy</h3>
+<p>
+Controls how multiple payload lists are combined when you fuzz more than one location.<br>
+Locations are processed in <strong>message location sort order</strong>, not the order you added them in the Fuzz dialog.
+</p>
+<ul>
+<li><strong>Cluster Bomb</strong> - try every combination: the <strong>last</strong> fuzz location is cycled through all of its payloads before an earlier location advances.</li>
+<li><strong>Pitchfork</strong> - pair payloads by position: 1st with 1st, 2nd with 2nd, and so on. The fuzzer stops when the <strong>shortest</strong> payload list is used up.</li>
+</ul>
+With a single fuzz location, both strategies produce the same order.
+
+<p>Example setup (two locations, two payloads each):</p>
+<ul>
+<li><strong>Location A</strong> payloads: 1, 2</li>
+<li><strong>Location B</strong> payloads: a, b</li>
+</ul>
+
+<h4>Cluster Bomb Example</h4>
+<p>
+The last location (B) changes on every request. Location A changes only after B has used every payload.
+</p>
+<table>
+<tr><th>Request</th><th>Location A</th><th>Location B</th></tr>
+<tr><td>1</td><td>1</td><td>a</td></tr>
+<tr><td>2</td><td>1</td><td>b</td></tr>
+<tr><td>3</td><td>2</td><td>a</td></tr>
+<tr><td>4</td><td>2</td><td>b</td></tr>
+</table>
+
+<h4>Pitchfork Example</h4>
+<p>
+The same payload position is used in every location on each request (1st with 1st, then 2nd with 2nd, and so on).
+</p>
+<table>
+<tr><th>Request</th><th>Location A</th><th>Location B</th></tr>
+<tr><td>1</td><td>1</td><td>a</td></tr>
+<tr><td>2</td><td>2</td><td>b</td></tr>
+</table>
+
+<h3>Concurrent Scanning Threads per Scan</h3>
+The number of threads the fuzzer will use per scan.<br>
+Increasing the number of threads will speed up the scan but may put extra strain on the computer ZAP is running on as well as the target.
+
+<h3>Delay when Fuzzing (in milliseconds)</h3>
+The number of milliseconds between requests by the fuzzer to the target host, usually done to
+avoid getting blocked by the target or if the target implements some sort of throttling requirement.
+
+<h2>Veja também</h2>
+<table>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td><td><a href="concepts.html">Conceitos de difusor</a></td></tr>
+</table>
+
+</body>
+</html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<TITLE>
+エンコード / デコード/ ハッシュ ダイアログ
+</TITLE>
+</HEAD>
+<BODY>
+<H1>エンコード / デコード/ ハッシュ ダイアログ</H1>
+
+<p>
+これはテキストをエンコード、デコード、またはハッシュすることを可能にします。
+
+<H2>共通項目</H2>
+このダイアログには、すべてのタブに共通の項目が1つあります：
+
+<H3>エンコード/デコード/ハッシュするテキスト:</H3>
+この項目は、エンコード、デコード、またはハッシュしたいテキストのためのものです。<br/>
+ダイアログ起動時にテキストが選択されていた場合、そのテキストがこの項目に設定されます。テキストを変更すると、他の項目が動的に更新されます<br/>
+
+<H3>レイアウト</H3>
+入力テキストエリアと出力パネルの境界線をドラッグすることで、各エリアのサイズを変更できます。この設定は、ダイアログを閉じる際にタブのレイアウトとともに保存されます。
+
+<H2>ツールバー</H2>
+
+<ul>
+  <li><img src="../../ui-tab--plus.png"></src> 新しいタブを追加 - ダイアログに新しいタブを追加します。</li>
+  <li><img src="../../ui-tab--delete.png"></src> 選択したタブを削除 - ダイアログから選択されている (または現在の) タブを削除します。</li>
+  <li><img src="../../ui-output--plus.png"></src> 現在のタブに出力パネルを追加 - 現在のタブに出力パネルを追加します。</li>
+  <li>リセット - すべてのタブ/パネルを既定の状態にリセットします。</li>
+  <li>オプション - オプションダイアログを開き、エンコード/デコード/ハッシュオプションパネルにフォーカスを設定します。</li>
+  <li>ヘルプ - ユーザーガイドを開き、コンテンツペインがエンコード/デコード/ハッシュアドオンのヘルプページにプリセットされます。</li>
+</ul>
+
+<H2>出力パネルコンテキストメニュー</H2>
+
+<ul>
+  <li>検索 - 標準の入力ダイアログを表示し、テキストエリア内での検索を可能にします。</li>
+  <li>コピー - 標準のコピー機能。</li>
+  <li>貼り付け - 標準の貼り付け機能。</li>
+  <li>出力パネルを削除 - 関連する出力テキストエリアを削除します。</li>
+  <li>入力テキストを置換 - 関連する出力テキストエリアの選択または全内容に基づいて、入力テキストの内容を置換します。（テキストエリアに内容がある場合にのみアクティブになります。）</li>
+</ul>
+
+<H2>既定のダイアログタブとパネル</H2>
+既定の状態では、エンコード/デコード/ハッシュダイアログは、次の設定でタブと出力パネルを表示します：
+
+<H3>エンコードタブの項目</H3>
+
+<ul>
+  <li>Base64 エンコード</li>
+  <li>Base64 URL エンコード</li>
+  <li>URL エンコード</li>
+  <li>完全な URL エンコード</li>
+  <li>ASCII Hex エンコード</li>
+  <li>HTML エンコード</li>
+  <li>完全な HTML エンコード</li>
+  <li>JavaScript エンコード</li>
+</ul>
+
+<H3>デコードタブの項目</H3>
+
+<ul>
+  <li>Base64 デコード</li>
+  <li>Base64 URL デコード</li>
+  <li>URL デコード</li>
+  <li>完全な URL デコード</li>
+  <li>ASCII Hex デコード</li>
+  <li>HTML デコード</li>
+  <li>JavaScript デコード</li>
+</ul>
+
+<H3>ハッシュタブの項目</H3>
+
+<ul>
+  <li>SHA256 ハッシュ</li>
+  <li>SHA1 ハッシュ</li>
+  <li>MD5 ハッシュ</li>
+</ul>
+
+<H3>不正なUTF-8</H3>
+
+<ul>
+  <li>2 バイト </li>
+  <li>3 バイト </li>
+  <li>4 バイト </li>
+</ul>
+
+<H3>Unicode</H3>
+
+<ul>
+  <li>エスケープされたテキスト</li>
+  <li>エスケープされていないテキスト</li>
+</ul>
+
+<H2>定義済みエンコード/デコード/ハッシュプロセッサ</H2>
+
+<H3>エンコーダー</H3>
+
+<H4>2バイトの不正なUTF-8</H4>
+2バイトの不正なUTF-8文字シーケンスを生成し表示します。
+
+<H4>3バイトの不正なUTF-8</H4>
+3バイトの不正なUTF-8文字シーケンスを生成し表示します。 
+
+<H4>4バイトの不正なUTF-8</H4>
+4バイトの不正なUTF-8文字シーケンスを生成し表示します。 
+
+<H4>ASCII Hex エンコード</H4>
+入力したテキストのASCII 16進数エンコーディングを表示します。
+
+<H3>Base64 エンコード</H3>
+入力したテキストのBase64エンコーディングを表示します。<br/>
+
+<H3>Base64 URL エンコード</H3>
+入力したテキストのBase 64 URLエンコーディングを表示します。 Base64URL は、エンコード結果をファイル名または URL アドレスとして使用できるようにすることを目的とした、主要な Base64 標準の修正です。 Base64URLは <a href="https://tools.ietf.org/html/rfc4648">RFC 4648</a> で説明されており、標準のBase64 アルファベットにはURLやファイル名として無効な文字 (例: プラス記号や疑問符が問題となる) が含まれていることが指摘されています。メインの標準では <code>&lt;&lt;???&gt;&gt;</code> を <code>PDw/Pz8+Pg==</code> にエンコードしますが、Base64URLはこれを <code>PDw_Pz8-Pg</code> に変換します。
+
+<H4>エスケープされた Unicode テキスト</H4>
+エスケープされたUnicode文字を表示します。例えば、テキスト <code>A&ccedil;ores</code> は <code>%u0041%u00e7%u006f%u0072%u0065%u0073</code> とエンコードされます。
+
+<H4>HTML エンコード</H4>
+入力したテキストのHTMLエンコーディングを表示します。例えば、テキスト <code>&quot;pi&ntilde;ata&quot;</code> は <code>&amp;quot;pi&amp;ntilde;ata&amp;quot;</code> とエンコードされます。
+
+<H4>完全な HTML エンコード</H4>
+入力したテキストの完全なHTMLエンコーディングを表示します。例えば、テキスト <code>&lt;script&gt;</code> は <code>&amp;#60;&amp;#115;&amp;#99;&amp;#114;&amp;#105;&amp;#112;&amp;#116;&amp;#62;</code> とエンコードされます。
+
+<H4>JavaScript エンコード</H4>
+入力したテキストのエスケープされたJavaScriptリテラルを表示します。例えば、テキスト <code>&quot;2&#65504;&quot;</code> は <code>\&quot;2\uFFE0\&quot;</code> とエンコードされます。
+
+<H4>URL エンコード</H4>
+入力したテキストのURLエンコーディングを表示します。
+
+<H4>完全な URL エンコード</H4>
+入力したテキストの完全なURLエンコーディングを表示します (すべての文字を16進数に変換し、パーセントを前置します)。
+
+<H4>エスケープされていない Unicode テキスト</H4>
+エスケープされていないUnicode文字を表示します。例えば、テキスト <code>%u0041%u00e7%u006f%u0072%u0065%u0073</code> は <code>A&ccedil;ores</code> とデコードされます。
+
+<H4>モールス符号エンコーダー</H4>
+提供された英数字 (スペースを含む) 入力に対応する短点 (.) と長点 (-)、単語区切り (/) を表示します。例えば、テキスト <code>SOS SOS</code> は <code>... --- .../... --- ...</code> とエンコードされます。
+
+<H3>デコーダー</H3>
+
+<H4>ASCII Hex デコード</H4>
+入力したテキストのASCII 16進数デコーディングを表示します。<br/>
+有効なデコードがない場合は、この項目は無効になります。
+
+<H4>Base64 デコード</H4>
+入力したテキストのBase64 デコーディングを表示します。<br/>
+折り返された行を処理するために、<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Base64.html#getMimeDecoder()">Mime デコーダー</a>を活用します。
+
+<H4>Base64 URL デコード</H4>
+入力したテキストのBase64 URLデコーディングを表示します。 Base64URLは、エンコード結果をファイル名またはURL アドレスとして使用できるようにすることを目的とした、主要な Base64 標準の修正です。 Base64URLは <a href="https://tools.ietf.org/html/rfc4648">RFC 4648</a> で説明されており、標準のBase64 アルファベットにはURLやファイル名として無効な文字 (例: プラス記号や疑問符が問題となる) が含まれていることが指摘されています。 
+
+<H4>HTML デコード</H4>
+入力したテキストの HTML デコーディングを表示します。例えば、テキスト <code>&amp;quot;pi&amp;ntilde;ata&amp;quot;</code> は <code>&quot;pi&ntilde;ata&quot;</code> とデコードされます。
+
+<H4>JavaScript デコード</H4>
+入力したテキストのアンエスケープされたJavaScriptリテラルを表示します。例えば、テキスト <code>\&quot;2\uFFE0\&quot;</code> は <code>&quot;2&#65504;&quot;</code> とデコードされます。
+
+<H4>URL デコード</H4>
+入力したテキストのURLデコーディングを表示します。
+
+<H4>完全な URL デコード</H4>
+入力したテキストのURLデコーディングを表示します (パーセント記号が削除され、16進数デコードされます)。
+
+<H4>モールス符号デコーダー</H4>
+提供されたモールス符号入力に対応する英数字 (スペースを含む) 出力で表示します。例えば、テキスト <code>... --- .../... --- ...</code> は <code>SOS SOS</code> とデコードされます。
+
+<H3>ハッシュ処理ツール</H3>
+
+<H4>MD5 ハッシュ</H4>
+入力したテキストのMD5ハッシュを表示します。
+
+<H4>SHA1 ハッシュ</H4>
+入力したテキストのSHA1ハッシュを表示します。
+
+<H4>SHA256 ハッシュ</H4>
+入力したテキストのSHA256ハッシュを表示します。
+
+<H2>その他のプロセッサ</H2>
+以下のプロセッサは、どのタブにも追加できます。
+
+<H3>カスタム</H3>
+カスタムの「エンコード/デコード」スクリプトは、スクリプトツリーで作成/追加し、カスタム出力パネルで使用できます。それらはテンプレートに示されているように <code>EncodeDecodeResult</code> オブジェクトを返す必要があります。しかし、 ユーザーがそうすることを怠った場合、それらは <code>toString()</code> 実装を活用して他のデータ型を返すことになります (これは一見すると役立つ/明らかではない場合があります)。
+
+<H3>ユーティリティ</H3>
+
+<H4>小文字に変換</H4>
+入力をすべて小文字に変換します。
+
+<H4>空白を削除</H4>
+<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Character.html#isWhitespace(char)">Character.isWhiteSpace(char)</a> に基づいて、テキストからすべての空白文字を削除します。
+
+<H4>反転</H4>
+入力の順序を反転します。
+
+<H4>大文字に変換</H4>
+入力をすべて大文字に変換します。
+
+<H4>ASCII化</H4>
+互換モードでの動作により完全ではないかもしれませんが、アクセント/ダイアクリティカルマーク/合字を削除して、ASCII文字のみを残すようにテキストを変換します。例:
+<ul>
+  <li><code>Tĥïŝ ĩš â fůňķŷ Šťŕĭńġ: ﬁ. étrange.</code> は <code>This is a funky String: fi. etrange.</code> になります。</li>
+  <li><code>鸟儿</code> は空の文字列になります (すべての文字が削除されます)。</li>
+</ul>
+
+参照：<br>
+<ul>
+    <li><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/text/Normalizer.html">Normalizer JavaDoc</a> </li>
+    <li><a href="https://en.wikipedia.org/wiki/Transliteration">Wikipedia: Transliteration</a></li>
+</ul>
+
+<H3>その他</H3>
+
+<H4>PowerShell エンコード</H4>
+UTF-16LEに変換され、Base64エンコードされます。 「dir」をエンコードする以下の例のいずれかに相当します：
+<p>
+<code> printf "dir"| iconv -t UTF-16LE | base64 -w 0 -</code>
+<br>
+<pre>
+<code>
+$command = 'dir'
+$bytes = [System.Text.Encoding]::Unicode.GetBytes($command)
+$encodedCommand = [Convert]::ToBase64String($bytes)
+echo $encodedCommand
+</code>
+</pre>
+<br>
+結果: <code>ZABpAHIA</code>
+<p>
+これは、以下のようなものを通じて活用できます (<code>$encodedCommand</code> がエンコードされた値 <code>ZABpAHIA</code>に設定されている場合)：<br>
+<code>powershell -exec bypass -enc $encodedCommand</code>
+
+<H2>ここから参照されています</H2>
+<table>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+ツールメニューの「エンコード/デコード/ハッシュ…」アイテム</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+出力タブ、スクリプトコンソール、リクエストおよびレスポンスパネルなどの多くのテキストエリアで、右クリックメニューの「エンコード/デコード/ハッシュ…」アイテム 
+</td></tr>
+</table>
+
+</BODY>
+</HTML>

@@ -1,0 +1,78 @@
+@startuml US11 use case diagram
+' US11 REST verification, use case diagram v0.1. Same system and actors as the US10 diagram;
+' US10 use cases faded grey, US11 use cases in green.
+
+title US11 use case diagram (REST verification)
+
+left to right direction
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI"
+skinparam ArrowColor #555555
+skinparam usecase {
+    BackgroundColor white
+    BorderColor #999999
+}
+skinparam note {
+    BackgroundColor #FFF4DA
+    BorderColor #D8C9A3
+}
+skinparam packageStyle rectangle
+
+actor Developer as dev
+actor "API client\n(browser or own app)" as client
+actor "REST API server\n(the developer's application)" as server
+
+rectangle "ZAP with REST Extraction add-on" {
+    ' US10, context only
+    usecase "Add API namespace" as UC1 #F6F6F6;line:DDDDDD;text:A8A8A8
+    usecase "Register endpoint pattern" as UC2 #F6F6F6;line:DDDDDD;text:A8A8A8
+    usecase "Start / stop extraction" as UC3 #F6F6F6;line:DDDDDD;text:A8A8A8
+    usecase "View API report" as UC4 #F6F6F6;line:DDDDDD;text:A8A8A8
+    usecase "Send request through proxy\n(existing ZAP)" as SEND #F6F6F6;line:DDDDDD;text:A8A8A8
+    usecase "Record matching API call" as REC #F6F6F6;line:DDDDDD;text:A8A8A8
+
+    ' US11
+    usecase "UC-V1 Define the spec\nof an endpoint" as V1 #C8E6C9;line:2E7D32;line.bold
+    usecase "UC-V2 Verify traffic\nagainst the spec" as V2 #C8E6C9;line:2E7D32;line.bold
+    usecase "UC-V3 Inspect the verification\nresult of a call" as V3 #C8E6C9;line:2E7D32;line.bold
+    usecase "UC-V4 Read the compliance\ndocumentation" as V4 #C8E6C9;line:2E7D32;line.bold
+    usecase "UC-V5 Add an endpoint pattern\nfrom an unmatched path" as V5 #C8E6C9;line:2E7D32;line.bold
+}
+
+dev -[#CCCCCC]- UC1
+dev -[#CCCCCC]- UC2
+dev -[#CCCCCC]- UC3
+dev -[#CCCCCC]- UC4
+dev -[#2E7D32,bold]- V1
+dev -[#2E7D32,bold]- V3
+dev -[#2E7D32,bold]- V4
+dev -[#2E7D32,bold]- V5
+client -[#CCCCCC]- SEND
+SEND -[#CCCCCC]- server
+
+REC .[#CCCCCC].> SEND : <color:#A8A8A8><<extend>></color>
+V2 .[#2E7D32,bold].> REC : <color:#1B5E20><<extend>></color>
+V3 .[#2E7D32,bold].> UC4 : <color:#1B5E20><<extend>></color>
+V4 .[#2E7D32,bold].> UC4 : <color:#1B5E20><<extend>></color>
+V5 .[#2E7D32,bold].> UC2 : <color:#1B5E20><<include>></color>
+
+note right of V2
+    Extension point in Record matching API call:
+    call recorded. Condition: the endpoint has a
+    non-empty spec. Verification itself happens
+    when the report is made (D2), so UC-V2 also
+    runs again after every spec change.
+end note
+
+note left of V1
+    Precondition: the endpoint pattern is registered.
+    Its spec starts empty (D8).
+end note
+
+note right of V5
+    Secondary (D4). Uses the paths that a started
+    namespace saw but no pattern matched.
+end note
+
+@enduml

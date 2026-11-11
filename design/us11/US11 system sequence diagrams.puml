@@ -1,0 +1,89 @@
+@startuml US11 SSD-V1 define the spec
+' US11 system sequence diagrams v0.1, page 1: SSD-V1 for UC-V1. System operations: OC-1, OC-2.
+title SSD-V1: Define the spec of an endpoint (UC-V1)
+legend bottom right
+  <color:#1B5E20><b>bold green</b></color>: new or changed in US11   <color:#A8A8A8>grey</color>: US10 behaviour, unchanged
+  participants: <back:#C8E6C9> new </back> <back:#FFF3C4> changed </back> <back:#F6F6F6><color:#A8A8A8> US10 </color></back>
+endlegend
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam sequenceMessageAlign left
+skinparam note {
+    BackgroundColor #FFF4DA
+    BorderColor #D8C9A3
+}
+hide footbox
+
+actor Developer as dev
+participant ":System\n(ZAP with REST Extraction)" as sys
+
+dev -[#2E7D32]> sys : <color:#1B5E20><b>selectEndpoint(namespace, template)</b></color>
+sys --> dev : spec items, or "No spec: calls are not checked"
+
+loop until the spec is complete
+    alt add an item
+        dev -[#2E7D32]> sys : <color:#1B5E20><b>addSpecItem(endpoint, item)</b></color>
+        note right of sys : OC-1. Item = kind + method + fields of that kind\n(name or variable, type, min, max, Required).
+        alt item valid (SPEC-S03 … S13)
+            sys --> dev : item listed under its method; ✓/✗ counts at next redraw
+        else refused
+            sys --> dev : message why (spec unchanged, SPEC-S14)
+        end
+    else edit an item
+        dev -[#2E7D32]> sys : <color:#1B5E20><b>editSpecItem(endpoint, oldItem, newItem)</b></color>
+        sys --> dev : item changed, or message why (old item kept)
+    else remove an item
+        dev -[#2E7D32]> sys : <color:#1B5E20><b>removeSpecItem(endpoint, item)</b></color>
+        note right of sys : OC-2. A Method item with other items\nis removed only after confirmation (SPEC-S05).
+        opt Method item with other items
+            sys --> dev : ask for confirmation
+            dev -[#2E7D32]> sys : <color:#1B5E20><b>confirm()</b></color>
+        end
+        sys --> dev : item (and its method's items) removed
+    end
+end
+@enduml
+
+@startuml US11 SSD-V2 verify traffic
+' US11 system sequence diagrams v0.1, page 2: SSD-V2 for UC-V2 (+ UC-V3). System operations: OC-3, OC-4.
+title SSD-V2: Verify traffic against the spec (UC-V2, read in UC-V3)
+legend bottom right
+  <color:#1B5E20><b>bold green</b></color>: new or changed in US11   <color:#A8A8A8>grey</color>: US10 behaviour, unchanged
+  participants: <back:#C8E6C9> new </back> <back:#FFF3C4> changed </back> <back:#F6F6F6><color:#A8A8A8> US10 </color></back>
+endlegend
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam sequenceMessageAlign left
+skinparam note {
+    BackgroundColor #FFF4DA
+    BorderColor #D8C9A3
+}
+hide footbox
+
+actor "API client" as client
+participant ":System\n(ZAP with REST Extraction)" as sys
+actor "REST API server" as server
+actor Developer as dev
+
+note over client, sys : Precondition: the namespace is started (US10).
+
+loop every request of the client
+    client -[#BBBBBB]> sys : <color:#A8A8A8>request(method, url, headers, body)</color>
+    sys -[#BBBBBB]> server : <color:#A8A8A8>request(method, url, headers, body)</color>
+    note right of sys : passed on unchanged (SPEC-C07)
+    server --> sys : response(status, headers, body)
+    sys -[#2E7D32]> sys : <color:#1B5E20><b>recordCall(message)</b></color>
+    note right of sys : OC-3. Recorded with request data and parsed\narguments, or counted as an unmatched path.
+    sys --> client : response(status, headers, body)
+end
+
+loop every redraw (at most every 500 ms) or when the developer looks
+    dev -[#2E7D32]> sys : <color:#1B5E20><b>getReport(namespace)</b></color>
+    note right of sys : OC-4. Every call verified against the\ncurrent spec of its endpoint (SPEC-V01).
+    sys --> dev : tree with ✓/✗ counts, calls table with Check column
+    opt inspect one call (UC-V3)
+        dev -[#2E7D32]> sys : <color:#1B5E20><b>selectCall(call)</b></color>
+        sys --> dev : request, one line per check (✓ ✗ ⚠ + message), response
+    end
+end
+@enduml

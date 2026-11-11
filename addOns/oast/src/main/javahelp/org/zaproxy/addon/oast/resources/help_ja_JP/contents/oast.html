@@ -1,0 +1,48 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>
+        アウトオブバンドアプリケーションセキュリティテストのサポート
+    </title>
+</head>
+<body>
+<h1>アウトオブバンドアプリケーションセキュリティテストのサポート</h1>
+
+OASTサポートアドオンを使用すると、Webアプリケーションにおけるアウトオブバンド脆弱性を検出および検証できます。
+
+<h2>サービス</h2>
+サポートされているサービスのリストについては、<a href="services/services.html">OASTサービス</a>のページを参照してください。
+
+<h2>コンテキストメニュー</h2> 
+「OASTペイロードを挿入」というコンテキストメニューが、サポートされているOASTサービスから新しいペイロードを挿入するために利用できる編集可能なテキストコンポーネント内で利用可能です。
+
+<h2>スクリプト</h2>
+<em>スクリプトコンソール</em>および<em>GraalVM JavaScript</em>アドオンがインストールされている場合、「OAST Request Handler.js」という新しいエクステンダースクリプトテンプレートがZAPに追加されます。このテンプレートを使用すると、アウトオブバンドリクエストが発見されたときにアクションを実行するスクリプトを作成できます。このアクションは、自分自身にメールを送信する、またはZAP内で別のスクリプトを実行するといった、あらゆるものが考えられます。
+
+<h2>アラート</h2>
+
+OASTを利用するスキャンルールは、アウトオブバンドで発生し遅延する可能性があるため、すぐに表示されない、または特定のアクティブスキャンに関連付けられないアラートを生成することがあります。
+
+<H2>関連情報</H2>
+<table>
+	<tr>
+		<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+		<td><a href="api.html">OAST API</a></td>
+		<td>OAST APIの詳細情報</td>
+	</tr>
+	<tr>
+		<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+		<td><a href="options.html">OASTオプション</a></td>
+		<td>OASTオプションの詳細情報</td>
+	</tr>
+    <tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td>
+            <a href="tab.html">OAST タブ</a></td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+  <TITLE>
+    自動化フレームワーク - 統計ジョブテスト
+  </TITLE>
+</HEAD>
+<BODY>
+<H1>自動化フレームワーク - 統計ジョブテスト</H1>
+
+統計ベースのテストは、自動化ジョブを持つすべてのアドオンでサポートされています。アドオンで関連する統計が使用されている場合、その統計に対してテストを作成できます。<br>
+ZAPが保持する最新の統計リストは、<a href="https://www.zaproxy.org/docs/internal-statistics/">https://www.zaproxy.org/docs/internal-statistics/</a>で確認できます。
+<p>
+1つのジョブは複数の統計に対するテストを持つことができ、同じ統計に対して複数のテストを作成できます。
+<p>
+注: 統計ベースのテストは、インメモリ統計が<a href="https://www.zaproxy.org/docs/desktop/ui/dialogs/options/stats/#in-memory-statistics-enabled">有効</a>にされている場合にのみ正しく機能します。
+
+<H2>YAML</H2>
+
+<pre>
+  jobs:
+  - type: example
+    parameters:
+      jobSpecificParam: 'value'
+    tests:
+      - name: 'test one'                      # テストの任意の名前
+        type: stats                           # テストが「stats」タイプであることを指定します
+        statistic: 'stats.addon.something'    # 整数 / 長整数型の統計の名前
+        site:                                 # サイト固有のテストのためのサイトの名前、変数をサポートします
+        operator: '>='                        # '==', '!=', '&gt;=', '&gt;', '&lt;', '&lt;=' のいずれか
+        value: 10                             # 統計値を比較する値
+        onFail: 'info'                        # 文字列: 'warn', 'error', 'info' のいずれか、必須
+
+</pre>
+</BODY>
+</HTML>
+

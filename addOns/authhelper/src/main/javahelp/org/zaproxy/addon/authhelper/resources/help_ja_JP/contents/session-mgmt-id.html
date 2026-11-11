@@ -1,0 +1,35 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<TITLE>
+セッション管理の特定
+</TITLE>
+</HEAD>
+<BODY>
+<H1>セッション管理の特定</H1>
+
+この<a href="authhelper.html">アドオン</a>には、セッション管理方式の識別を試みるパッシブスキャンルールが含まれています。<br>
+一般的に使用されるセッション管理識別子や Authorization リクエストヘッダーで指定された値の存在から、セッション管理方式を識別します。
+<p>
+このルールは非常に特殊なセッション管理方式の識別を試みません。自動化を重視するため、偽陽性（セッション管理方式を誤って識別する）よりも偽陰性（特殊な方式を識別できない）の方が許容されます。 
+<p>
+<a href="autodetect-session.html">セッション管理方式の自動検出</a>を使用するように設定されたコンテキスト内でセッション管理方式を識別した場合、コンテキストは識別された方式を使用するように自動的に更新されます。
+<br>
+セッション管理方式が識別されない場合は、リクエスト先のサイトがコンテキストに含まれているかを確認してください。<br>
+含まれていない場合は、そのサイトをコンテキストに追加してから、ブラウザ経由で再度認証してください。
+<p>
+「その他の情報」フィールドには、指定が必要な<a href="session-header.html">ヘッダーベースのセッション管理</a>トークンのセットが報告されます。
+<p>
+現在、このルールが識別するのは以下のリクエストです：
+<ul>
+<li>ヘッダーベースのセッション管理方式
+</ul>
+
+このルールが識別すべきセッション管理方式の検出に失敗した場合は、機密情報を伏せたうえでリクエストおよびレスポンスの詳細を添えて <a href="https://github.com/zaproxy/zaproxy/issues">問題</a> を報告してください。調査を行います。
+
+<p>
+
+最新のコード: <a href="https://github.com/zaproxy/zap-extensions/blob/main/addOns/authhelper/src/main/java/org/zaproxy/addon/authhelper/SessionDetectionScanRule.java">SessionDetectionScanRule.java</a>
+
+</BODY>
+</HTML>

@@ -1,0 +1,124 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<TITLE>
+ブラウザベース認証
+</TITLE>
+</HEAD>
+<BODY>
+<H1>ブラウザベース認証</H1>
+
+この<a href="authhelper.html">アドオン</a>は、対象Webサイトへのログインにブラウザを使用する新しい認証方法を追加します。 
+<p>
+この認証方法は、認証を実行するためにログインURLとユーザー認証情報を必要とします。デフォルトでは、ユーザー名フィールドとパスワードフィールドに適したフィールドを、同じページまたは複数のページ (例: ユーザー名入力後にパスワードフィールドが表示される場合) で自動的に検出しようとします。
+<p>
+計画では、この認証方法を最も一般的なログインフォーマットすべてに対応するよう継続的に強化する予定です。対象アプリケーションのログインページで動作しない場合は、可能な限り多くの詳細を提供して、<a href="https://groups.google.com/group/zaproxy-users">ZAPユーザーグループ</a>経由でZAPチームに通知してください。
+<p>
+この方法は、Firefox限定でHTTP Basic認証もサポートします (Seleniumの制限による)。
+
+<h3>認証ステップ</h3>
+認証方法が適したフィールドを見つけられない場合、または追加のステップが必要な場合、ユーザーが手動で指定できます。以下のステップがサポートされています：
+<table>
+  <tr><th>名前</th><th>タイプ</th><th>説明</th></tr>
+  <tr><td>自動ステップ</td><td><code>AUTO_STEPS</code></td><td>認証方法がデフォルトで実行するステップ、すなわち必要なフィールドの特定と入力 (すでに指定されていない場合) を実行することを示します。これは、認証方法がフィールドを見つけ送信できるが、他の必要なステップが前または後に発生する場合に便利です。</td></tr>
+  <tr><td>要素クリック</td><td><code>CLICK</code></td><td>Web要素をクリックします。例: ログインフォームにアクセスしたり、ポップアップを閉じたりする場合。</td>
+  <tr><td>カスタムフィールドの入力</td><td><code>CUSTOM_FIELD</code></td><td>指定された値でカスタムフィールドを入力します。例: ログインフォームでレルムまたは組織部門を選択する場合。</td>
+  <tr><td>パスワードフィールドの入力</td><td><code>PASSWORD</code></td><td>適切なフィールドが自動的に特定されなかった場合に、パスワードフィールドに入力します。</td>
+  <tr><td>TOTPフィールドの入力</td><td><code>TOTP_FIELD</code></td><td>TOTPフィールドに入力します。</td>
+  <tr><td>ユーザー名フィールドの入力</td><td><code>USERNAME</code></td><td>適切なフィールドが自動的に特定されなかった場合に、ユーザー名フィールドに入力します。</td>
+  <tr><td>Escapeキーの送信</td><td><code>ESCAPE</code></td><td>Web要素にEscapeキーを送信します。例: ポップアップを閉じる場合。</td>
+  <tr><td>リターンキーの送信</td><td><code>RETURN</code></td><td>Web要素にリターンキーを送信します。例: ログインフォームを送信する場合。</td>
+  <tr><td>タイムアウトまで待機</td><td><code>WAIT</code></td><td>指定されたタイムアウトまで待機します。</td>
+</table>
+
+各ステップは、指定された順序で順次実行されます。 Web要素に作用するステップは、CSSセレクタまたはXPathで識別する必要があります。これらは、例えばブラウザの開発者ツールから取得可能です。これらのステップにはタイムアウトがあり、ログインページの読み込みに時間がかかる場合に、指定されたミリ秒数までWeb要素の表示と操作可能になるのを待機します。
+
+<code>CUSTOM_FIELD</code>、<code>PASSWORD</code>、および <code>USERNAME</code> ステップは、対応するフィールドの既存値をクリアするため、入力したい完全な値を指定する必要があります。 
+
+<h3>セッション識別</h3>
+セッショントークンを含むレスポンスは、ログイン後の最初のレスポンスで以下のいずれかを含むものとして識別されます：
+<ul>
+<li><code>Authorization</code>ヘッダー
+<li><code>AccessToken</code> または <code>token</code> という要素を含むJSONデータ - 大文字小文字は無視されます
+</ul>
+
+<H2>自動化フレームワーク</H2>
+
+ブラウザベース認証は、自動化フレームワークプランの環境セクションで以下のように設定できます：
+<pre>
+      authentication:
+        method: "browser"
+        parameters:
+          loginPageUrl:                # 文字列、ログインページのURL、必須
+          loginPageWait:               # 整数、ログインフォーム送信後の待機時間（秒）、デフォルト: 5
+          stepDelay:                   # 整数、各ステップ間の待機時間（秒）、デフォルト: 0
+          browserId:                   # 文字列、使用するブラウザID、デフォルト: firefox-headless
+          diagnostics:                 # ブール値、認証中の診断データの記録を有効化、デフォルト: false。 
+          steps:                       # カスタムステップのリスト。
+          - description:               # 文字列、ステップの説明。
+            type:                      # ステップのタイプ、AUTO_STEPS, CLICK, CUSTOM_FIELD, ESCAPE, PASSWORD, RETURN, TOTP_FIELD, USERNAME, WAIT のいずれか
+            cssSelector:               # 文字列、Web要素のCSSセレクタ
+            xpath:                     # 文字列、Web要素のXPath
+            value:                     # 文字列、Web要素に入力する値
+            timeout:                   # 整数、Web要素の待機ミリ秒数、デフォルト: 1000 
+</pre>
+
+<p>
+診断情報の詳細については、<a href="auth-report-json.html">認証レポート</a>を参照してください。
+
+<p>
+TOTPデータはユーザー認証情報の下に定義されます： 
+<pre>
+      credentials:
+        username: …
+        password: …
+        totp:
+          secret:          # 文字列、シークレット
+          period:          # 整数、期間 デフォルト: 30 
+          digits:          # 整数、桁数 デフォルト: 6 
+          algorithm:       # 文字列、アルゴリズムデフォルト: SHA1
+</pre>
+
+<H2>AJAXスパイダー統合</H2>
+
+AJAXスパイダーは、ブラウザベース認証を使用するコンテキストでユーザーが指定されている場合、自動的にログインします。
+<p>
+この機能は、以下に詳述するSelenium統合を使用するため、手動で起動されたブラウザも、AJAXスパイダーがブラウザベース認証を使用した認証済みスキャンを実行している場合にログインされます。
+
+<H2>Selenium統合</H2>
+
+ZAPが起動するすべてのブラウザを、コンテキストで設定された詳細を使用して最初にログインするよう設定できます。これはデフォルトで無効です。
+
+<p>
+
+この機能は、以下の静的メソッドで制御でき、AJAXスパイダーで使用され、スクリプトからも呼び出せます。
+
+<pre>
+org.zaproxy.addon.authhelper.AuthUtils.enableBrowserAuthentication(Context context, String userName)
+</pre>
+このメソッドは、ブラウザが起動されるたびに、指定されたコンテキストとユーザーに対してブラウザ認証を有効にします。コンテキストがブラウザベース認証用に設定されていないか、ユーザーが見つからない場合に例外が発生します。
+
+<pre>
+org.zaproxy.addon.authhelper.AuthUtils.enableBrowserAuthentication()
+</pre>
+このメソッドは、ブラウザ起動時にブラウザ認証を有効化します。ブラウザベース認証用に設定された有効なユーザーのコンテキストが選択されます。
+
+<pre>
+org.zaproxy.addon.authhelper.AuthUtils.disableBrowserAuthentication()
+</pre>
+このメソッドは、ブラウザ起動時のブラウザ認証を無効化します。
+
+<p>
+
+コアの制限により：
+<ul>
+<li>このアドオンを追加または削除した場合、既存のコンテキストはGUIで更新されません
+<li>ブラウザベース認証はAPI経由でコンテキストに追加できません (ZAP 2.16.1以降を除く)
+</ul>
+これらの制限は将来のリリースで解決される予定です。 
+
+<p>
+最新のコード: <a href="https://github.com/zaproxy/zap-extensions/blob/main/addOns/authhelper/src/main/java/org/zaproxy/addon/authhelper/BrowserBasedAuthenticationMethodType.java">BrowserBasedAuthenticationMethodType.java</a>
+
+</BODY>
+</HTML>

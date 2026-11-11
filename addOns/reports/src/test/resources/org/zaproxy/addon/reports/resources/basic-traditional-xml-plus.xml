@@ -1,0 +1,94 @@
+<?xml version="1.0"?>
+<OWASPZAPReport programName="ZAP" version="Dev Build" generated="Wed, 22 Oct 2025 17:09:39" created="2025-10-22T16:09:39.782827Z">
+	
+		<site name="http://example.com" host="example.com" port="80" ssl="false">
+			<alerts>
+				
+					<alertitem>
+						<pluginid>1</pluginid>
+						<alertRef>1</alertRef>
+						<alert>XSS</alert>
+						<name>XSS</name>
+						<riskcode>3</riskcode>
+						<confidence>2</confidence>
+						<riskdesc>!reports.report.risk.3! (!reports.report.confidence.2!)</riskdesc>
+						<confidencedesc>!reports.report.confidence.2!</confidencedesc>
+						<desc>XSS Description</desc>
+						<instances>
+							
+								<instance>
+									<uri>http://example.com/example_3</uri>
+									<nodeName></nodeName>
+									<method>GET</method>
+									<param>Test Param</param>
+									<attack>Test &quot;Attack\&quot;</attack>
+									<evidence>Test &lt;p&gt;Evidence</evidence>
+									<otherinfo>Test &apos;Other\
+Second line</otherinfo>
+									<requestheader>GET http://example.com/example_3 HTTP/1.1
+host: example.com
+user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:92.0) Gecko/20100101 Firefox/92.0
+pragma: no-cache
+cache-control: no-cache
+
+</requestheader>
+									<requestbody>Test Request Body</requestbody>
+									<responseheader>HTTP/1.0 0
+
+</responseheader>
+									<responsebody>Test Response Body</responsebody>
+								</instance>
+							
+							
+								<instance>
+									<uri>http://example.com/example_3</uri>
+									<nodeName></nodeName>
+									<method>GET</method>
+									<param>Test Param</param>
+									<attack>Test &quot;Attack\&quot;</attack>
+									<evidence>Test &lt;p&gt;Evidence</evidence>
+									<otherinfo>Test Another &apos;Other\</otherinfo>
+									<requestheader>GET http://example.com/example_3 HTTP/1.1
+host: example.com
+user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:92.0) Gecko/20100101 Firefox/92.0
+pragma: no-cache
+cache-control: no-cache
+
+</requestheader>
+									<requestbody>Test Request Body</requestbody>
+									<responseheader>HTTP/1.0 0
+
+</responseheader>
+									<responsebody>Test Response Body</responsebody>
+								</instance>
+							
+						</instances>
+						<count>2</count>
+						<systemic>false</systemic>
+						<solution>Test Solution</solution>
+						<otherinfo>Test &apos;Other\
+Second line</otherinfo>
+						<reference>Test Reference</reference>
+						<cweid>123</cweid>
+						<wascid>456</wascid>
+						<sourceid>0</sourceid>
+						<tags>
+							
+								<tag>
+									<tag>tagkey</tag>
+									<link>tagvalue</link>
+								</tag>
+							
+						</tags>
+					</alertitem>
+				
+			</alerts>
+			<statistics>
+				
+			</statistics>
+		</site>
+	
+	<statistics>
+		
+	</statistics>
+</OWASPZAPReport>

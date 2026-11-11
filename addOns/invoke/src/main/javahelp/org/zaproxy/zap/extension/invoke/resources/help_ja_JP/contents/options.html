@@ -1,0 +1,83 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>オプション – アプリケーション画面</title>
+</head>
+<body>
+	<h1>オプション – アプリケーション画面</h1>
+	<p>
+		この画面では、呼び出し可能な<a href="concepts.html">アプリケーション</a>を設定できます。<br>
+デフォルトではアプリケーションは登録されていません。使用したいアプリケーションをすべて追加する必要があります。
+	</p>
+
+	<h3>表示名</h3>
+	<p>ZAPでこのアプリケーションに使用される名前です。</p>
+
+	<h3>コマンドのフルパス</h3>
+	<p>
+		呼び出したいアプリケーションの完全なパス。<br>
+指定できるコマンドは1つだけです。複数のコマンドを一度に実行したい場合や、環境変数を設定する必要がある場合は、スクリプトファイルまたはバッチファイルを作成し、それをZAPから起動してください。
+	</p>
+
+	<h3>パラメーター</h3>
+	ZAPがコマンドに渡すパラメーターです。<br>
+	パラメーターを渡すために以下のタグを使用できます：
+	<table>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>%url%</td>
+			<td>完全なURL。(例: http://localhost/test?a=b)</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>%site%</td>
+			<td>サイト。(例: http://localhost:8080/)</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>%host%</td>
+			<td>ホスト名。(例: localhost)</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>%port%</td>
+			<td>ポート。(例: 80)</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>%cookie%</td>
+			<td>リクエストヘッダーの最初のCookieフィールド (存在する場合)</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>%postdata%</td>
+			<td>送信されたPOSTデータ (存在する場合)。すべての改行は "\n" に置換されます</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>%msgid%</td>
+			<td>APIからデータを取得するためのHTTPメッセージID (/JSON/core/view/message/?id=$msgid)。常に存在するわけではありません。メッセージIDがない場合は -1 が返されます</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>%header-{{ header }}%</td>
+			<td>名前によるリクエストヘッダー (存在する場合)。例: <code>%header-user-agent%</code>はUser-Agentヘッダーの値を返します</td>
+		</tr>
+	</table>
+	したがって、コマンドが '-u' を使用してURLを受け入れる場合、パラメーターは次のように指定します: '-u %url%'
+
+	<h3>出力をキャプチャ</h3>
+	<p>
+		チェックされている場合、実行されたコマンドとその生成する出力は<i>出力タブ</i>に表示されます。<br>
+UIを持たないスクリプトやコマンドを実行する際は、必ずこのオプションを使用してください。<br>
+トラブルシューティングにもこのオプションを使用できます。アプリケーションが期待どおりに実行されない場合は、実行されたコマンドをコピーし、コマンドラインプロンプトから実行してみてください。
+	</p>
+
+	<h3>ノートに出力</h3>
+	<p>
+		チェックされている場合、出力は関連する<i>履歴タブ</i>のレコードに添付された<i>ノート</i>に追記されます。<br>
+<i>サイトタブ</i>内の一部のノードには関連する<i>履歴タブ</i>のレコードがないことに注意してください。これらのノードに対しては、このオプションは適用されません。 
+	</p>
+</body>
+</html>

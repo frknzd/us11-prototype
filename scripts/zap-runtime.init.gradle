@@ -1,0 +1,13 @@
+// Override only this invocation of the sibling core run task; no source edits.
+gradle.projectsEvaluated {
+    if (rootProject.findProject(':zap') == null) return
+    def runtime = System.getenv('US11_RUNTIME')
+    def profile = System.getenv('US11_PROFILE')
+    if (!runtime || !profile) throw new GradleException('Use scripts/run-prototype.sh')
+    rootProject.project(':zap').tasks.named('run', JavaExec) {
+        workingDir = file(runtime)
+        args = ['-dir', profile, '-installdir', runtime,
+                '-host', '127.0.0.1', '-port', System.getenv('US11_PROXY_PORT') ?: '8091',
+                '-config', 'api.disablekey=false', '-config', 'checkForUpdates.checkOnStart=false']
+    }
+}

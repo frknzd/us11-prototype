@@ -1,0 +1,52 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<TITLE>コマンドライン</TITLE>
+</HEAD>
+<BODY>
+	<H1>コマンドライン</H1>
+
+	ネットワークアドオンは、以下のコマンドラインオプションをサポートしています：
+	<table>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>-certload</td>
+			<td>指定されたファイルからルートCA証明書を読み込みます。</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>-certpubdump</td>
+			<td>指定されたファイルにルートCA証明書をダンプします。これはブラウザへのインポートに適しています。</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>-certfulldump</td>
+			<td>指定されたファイルにルートCA証明書と秘密鍵をダンプします。これはZAPへのインポートに適しています。</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>-host</td>
+			<td>設定ファイルで指定されているメインプロキシのホストを上書きします。</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td>-port</td>
+			<td>設定ファイルで指定されているメインプロキシのポートを上書きします。</td>
+		</tr>
+	</table>
+
+	<H3>ローカルサーバー/プロキシ</H3>
+	ZAPがコマンドラインモード (すなわち <code>-cmd</code>) で実行されている場合、メインプロキシのみが起動されます。これは、統合テストのプロキシとして使用したり、ZAP APIにアクセスしたりする場合などに利用されます。コマンドラインモードまたはデーモンモード (すなわち <code>-daemon</code>) でメインプロキシを開始できない場合、ZAPは終了します。GUIで実行されている場合は、代わりに適切な警告が表示されます。
+
+	<H2>関連情報</H2>
+	<table>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td><a href="network.html">ネットワーク</a></td>
+			<td>ネットワークアドオンの概要</td>
+		</tr>
+	</table>
+
+</BODY>
+</HTML>

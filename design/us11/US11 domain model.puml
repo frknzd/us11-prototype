@@ -1,0 +1,176 @@
+@startuml US11 domain model
+' US11 REST verification, domain model v0.1. Concepts only: no software classes, no types,
+' no operations. Green = new in US11, yellow = changed from the US10 domain model, white = US10.
+
+title US11 domain model (REST verification)
+
+top to bottom direction
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI"
+skinparam classAttributeIconSize 0
+skinparam nodesep 70
+skinparam ranksep 70
+skinparam ArrowColor #555555
+skinparam class {
+    BackgroundColor white
+    BorderColor #999999
+}
+skinparam note {
+    BackgroundColor #FFF4DA
+    BorderColor #D8C9A3
+}
+hide circle
+hide methods
+hide empty members
+
+' ------------------------------------------------------------- US10 concepts
+class ApiReport #F6F6F6;line:DDDDDD;text:A8A8A8 {
+}
+class ApiNamespace #F6F6F6;line:DDDDDD;text:A8A8A8 {
+    base URL
+    extracting
+}
+class EndpointPattern #F6F6F6;line:DDDDDD;text:A8A8A8 {
+    template
+}
+class PathSegment #F6F6F6;line:DDDDDD;text:A8A8A8 {
+}
+class LiteralSegment #F6F6F6;line:DDDDDD;text:A8A8A8 {
+    text
+}
+class VariableSegment #F6F6F6;line:DDDDDD;text:A8A8A8 {
+    name
+}
+class ApiCall #F6F6F6;line:DDDDDD;text:A8A8A8 {
+    HTTP method
+    URL
+    status code
+    response headers
+    response body
+    time
+}
+
+' ------------------------------------------------------------- changed
+class Argument #FFF3C4;line:C9A227;line.bold {
+    location
+    name
+    value
+    JSON kind
+}
+
+' ------------------------------------------------------------- new: request side
+class Request #C8E6C9;line:2E7D32;line.bold {
+    query
+    content type
+    body
+    body state
+}
+class Header #C8E6C9;line:2E7D32;line.bold {
+    name
+    value
+}
+
+' ------------------------------------------------------------- new: the spec
+class Spec #C8E6C9;line:2E7D32;line.bold {
+}
+class Operation #C8E6C9;line:2E7D32;line.bold {
+    HTTP method
+}
+class ContentTypeItem #C8E6C9;line:2E7D32;line.bold {
+    media type
+}
+class ParameterItem #C8E6C9;line:2E7D32;line.bold {
+    location
+    name
+    required
+}
+class ParameterType #C8E6C9;line:2E7D32;line.bold {
+}
+class StringType #C8E6C9;line:2E7D32;line.bold {
+}
+class IntegerType #C8E6C9;line:2E7D32;line.bold {
+}
+class DecimalType #C8E6C9;line:2E7D32;line.bold {
+}
+class Base64Type #C8E6C9;line:2E7D32;line.bold {
+}
+class Range #C8E6C9;line:2E7D32;line.bold {
+    minimum
+    maximum
+}
+
+' ------------------------------------------------------------- new: the result
+class Verdict #C8E6C9;line:2E7D32;line.bold {
+    status
+}
+class Check #C8E6C9;line:2E7D32;line.bold {
+    matched
+}
+class Violation #C8E6C9;line:2E7D32;line.bold {
+    kind
+}
+class Warning #C8E6C9;line:2E7D32;line.bold {
+    kind
+}
+class UnmatchedPath #C8E6C9;line:2E7D32;line.bold {
+    path
+    call count
+}
+
+note as N_Example
+    **Example.** Endpoint pattern ""/posts/[POST_ID]/comments"" has a spec with one operation
+    ""POST"": content type ""application/json"", path variable ""POST_ID"" Integer 1..10000, body field
+    ""title"" String (required), query parameter ""draft"" String.
+    The call ""POST /posts/abc/comments?draft=1"" with body ""{"title":"Hi","x":2}"" gets a verdict
+    INVALID: check ""POST_ID = abc"" fails with violation INVALID_TYPE, check ""title"" matches,
+    ""draft"" matches, argument ""x"" is an EXTRA_ARGUMENT violation.
+end note
+
+note as N_Rules
+    **Legend:** green = new in US11, yellow = changed (US10 ""ArgumentValue"" became
+    ""Argument"" with a location), grey = unchanged from the US10 domain model.
+    Bold green lines are new associations, grey lines existed in US10.
+    * A spec starts empty; an empty spec judges nothing (verdict NOT_VERIFIED).
+    * An operation is one allowed method; every other item belongs to one operation.
+    * A parameter item with location PATH types one variable segment of the pattern.
+    * A range only limits Integer and Decimal.
+    * Verdicts are made when the report is made, against the current spec.
+end note
+
+' ------------------------------------------------------------- associations
+ApiReport "0..1" -[#CCCCCC]right- "1" ApiNamespace : <color:#A8A8A8>documents ▸</color>
+ApiNamespace "1" -[#CCCCCC]- "0..*" EndpointPattern : <color:#A8A8A8>contains ▾</color>
+ApiNamespace "1" -[#2E7D32,bold]- "0..1000" UnmatchedPath : <color:#1B5E20>counts ▸</color>
+EndpointPattern "1" -[#CCCCCC]- "1..* {ordered}" PathSegment : <color:#A8A8A8>consists of ▾</color>
+LiteralSegment -[#CCCCCC]up-|> PathSegment
+VariableSegment -[#CCCCCC]up-|> PathSegment
+EndpointPattern "0..*" -[#CCCCCC]- "0..*" ApiCall : <color:#A8A8A8>◂ matches</color>
+ApiCall "1" -[#CCCCCC]- "0..*" Argument : <color:#A8A8A8>◂ taken from</color>
+VariableSegment "1" -[#CCCCCC]- "0..*" Argument : <color:#A8A8A8>fills ▸</color>
+ApiCall "1" -[#2E7D32,bold]- "1" Request : <color:#1B5E20>carries ▸</color>
+Request "1" -[#2E7D32,bold]- "0..* {ordered}" Header : <color:#1B5E20>has ▸</color>
+
+EndpointPattern "1" -[#2E7D32,bold]- "1" Spec : <color:#1B5E20>is described by ▸</color>
+Spec "1" -[#2E7D32,bold]- "0..*" Operation : <color:#1B5E20>allows ▸</color>
+Operation "1" -[#2E7D32,bold]- "0..*" ContentTypeItem : <color:#1B5E20>accepts ▸</color>
+Operation "1" -[#2E7D32,bold]- "0..*" ParameterItem : <color:#1B5E20>constrains ▸</color>
+ParameterItem "0..*" -[#2E7D32,bold]- "1" ParameterType : <color:#1B5E20>has ▸</color>
+ParameterItem "0..*" -[#2E7D32,bold]- "0..1" VariableSegment : <color:#1B5E20>types ▸</color>
+StringType -[#2E7D32,bold]up-|> ParameterType
+IntegerType -[#2E7D32,bold]up-|> ParameterType
+DecimalType -[#2E7D32,bold]up-|> ParameterType
+Base64Type -[#2E7D32,bold]up-|> ParameterType
+IntegerType "1" -[#2E7D32,bold]- "0..1" Range : <color:#1B5E20>limited by ▸</color>
+DecimalType "1" -[#2E7D32,bold]- "0..1" Range : <color:#1B5E20>limited by ▸</color>
+
+ApiCall "1" -[#2E7D32,bold]- "0..*" Verdict : <color:#1B5E20>gets ▸</color>
+Verdict "0..*" -[#2E7D32,bold]- "1" Spec : <color:#1B5E20>judged against ▸</color>
+Verdict "1" -[#2E7D32,bold]- "0..*" Check : <color:#1B5E20>contains ▸</color>
+Verdict "1" -[#2E7D32,bold]- "0..*" Violation : <color:#1B5E20>lists ▸</color>
+Verdict "1" -[#2E7D32,bold]- "0..*" Warning : <color:#1B5E20>lists ▸</color>
+Check "0..*" -[#2E7D32,bold]- "1" Argument : <color:#1B5E20>about ▸</color>
+Check "0..*" -[#2E7D32,bold]- "1" ParameterItem : <color:#1B5E20>against ▸</color>
+Check "0..1" -[#2E7D32,bold]- "0..1" Violation : <color:#1B5E20>fails with ▸</color>
+ApiReport "1" -[#2E7D32,bold]- "0..*" Verdict : <color:#1B5E20>shows ▸</color>
+@enduml

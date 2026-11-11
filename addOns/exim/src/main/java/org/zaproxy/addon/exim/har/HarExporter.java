@@ -1,0 +1,85 @@
+/*
+ * Zed Attack Proxy (ZAP) and its related class files.
+ *
+ * ZAP is an HTTP/HTTPS proxy for assessing web application security.
+ *
+ * Copyright 2024 The ZAP Development Team
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.zaproxy.addon.exim.har;
+
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import de.sstoehr.harreader.model.HarLog;
+import java.io.IOException;
+import java.io.Writer;
+import org.parosproxy.paros.Constant;
+import org.parosproxy.paros.db.DatabaseException;
+import org.parosproxy.paros.model.HistoryReference;
+import org.zaproxy.addon.exim.ExporterType;
+
+/** Exporter that exports messages as HAR. */
+public class HarExporter extends ExporterType {
+
+    public static final String ID = "har";
+
+    private JsonGenerator generator;
+
+    public HarExporter() {
+        super(ID, Constant.messages.getString("exim.exporter.type.har"));
+    }
+
+    @Override
+    public ExporterType createForExport() {
+        return new HarExporter();
+    }
+
+    @Override
+    public void begin(Writer writer) throws IOException {
+        generator =
+                HarUtils.JSON_MAPPER
+                        .createGenerator(writer)
+                        .useDefaultPrettyPrinter()
+                        .setPrettyPrinter(
+                                new DefaultPrettyPrinter()
+                                        .withObjectIndenter(new DefaultIndenter("  ", "\n")));
+
+        generator.writeStartObject();
+        generator.writeObjectFieldStart("log");
+        HarLog log = HarUtils.createZapHarLog().build();
+        generator.writeStringField("version", log.version());
+        generator.writePOJOField("creator", log.creator());
+        generator.writeArrayFieldStart("entries");
+    }
+
+    @Override
+    public void write(Writer writer, HistoryReference ref) throws IOException {
+        try {
+            generator.writePOJO(
+                    HarUtils.createHarEntry(
+                            ref.getHistoryId(), ref.getHistoryType(), ref.getHttpMessage()));
+        } catch (DatabaseException ignore) {
+            // The message is cached in the HistoryReference.
+        }
+    }
+
+    @Override
+    public void end(Writer writer) throws IOException {
+        generator.writeEndArray();
+        generator.writeEndObject();
+        generator.writeEndObject();
+        generator.flush();
+    }
+}

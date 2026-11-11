@@ -1,0 +1,62 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>
+WebSocket sekmesi
+</title>
+</head>
+<body>
+<h1>WebSocket sekmesi</h1>
+
+<p>
+WebSockets sekmesi WebSocket bağlantılarından gelen tüm mesajları görüntüler. 
+ZAP aktif durumdayken, WebSockets'i eylem halinde görmek için, örneğin şurayı ziyaret edin: <a href="http://browserquest.mozilla.org/">Mozilla BrowserQuest</a>.
+</p>
+
+<h2>Filtreler</h2>
+	<h3>Kanal Seçici</h3>
+	<p>
+		You can restrict the display of messages to one specific WebSocket
+		channel or all.
+		<br>
+		If you select a specific channel, then the <i>Show handshake</i> button
+		(<img src="images/handshake.png" align="bottom" width="16" height="16" />)
+		becomes enabled. When you click on it, the corresponding HTTP handshake is
+		shown in the Request/Response tab.
+	</p>
+
+	<h3>Filtre Diyaloğu</h3>
+	<p>
+		In the filter dialog (<img src="images/054.png" align="bottom" width="16" height="16" />)
+		you can further control which messages are displayed.
+	</p>
+
+<h2>Kesme Noktaları</h2>
+<p>
+	You can set custom breakpoints using the <i>Add Custom Breakpoints</i>
+	button (<img src="images/break_add.png" align="bottom" width="16" height="16" />).
+	<br>
+	Alternatively you can use the <i>Right click menu</i>.
+</p>
+
+<h2>Sağ tık menü</h2>
+<p>
+	Bir WebSocket menüsüne sağ tıklama şunu yapmanızı sağlayacak bir menü getirecektir:
+</p>
+
+	<h3>WebSocket'dan hariç tut</h3>
+	<p>
+		WebSocket connections can be excluded from the WebSockets tab by adding
+		an excluded URL to the
+		<i>Session Properties</i>. Bu öğeye tıklamak, önceden girilen URL ile oturum özelliklerini getirir.
+		Bir WebSocket bağlantısını hariç tutmak bağlantının kapanmasıyla sonuçlanmayacaktır fakat onları daha fazla işlem yapmadan iletmeyle sonuçlanacaktır.
+	</p>
+
+	<h3>Kırılma...</h3>
+	<p>
+		This will bring up the
+		<i>Add Break Point dialog</i> which allows you to set up a custom break point.
+	</p>
+</body>
+</html>

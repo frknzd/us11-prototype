@@ -1,0 +1,58 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<TITLE>
+クライアントスクリプト認証
+</TITLE>
+</HEAD>
+<BODY>
+<H1>クライアントスクリプト認証</H1>
+
+この<a href="authhelper.html">アドオン</a>は、ブラウザを使用して対象Webサイトにログインする新しい認証方法を追加します。 
+<p>
+この機能は、ログインのためにZestスクリプト (ZAPブラウザ拡張機能で記録されたものかもしれません) を活用します。
+<p>
+
+<H2>自動化フレームワーク</H2>
+
+クライアントスクリプト認証は、自動化フレームワークプランの環境セクションで以下のように設定できます：
+<pre>
+      authentication:
+        method: "client"
+        parameters:
+          script: /path/to/RecordedAuth.zst  # 文字列、Zestログインスクリプトへのパス
+          scriptInline:                      # 文字列、完全なスクリプト (複数行にわたる可能性があります) - これか 'script' のいずれかを指定し、両方は指定しないでください
+          scriptEngine: Mozilla Zest         # ログインスクリプトに使用されるスクリプトエンジン
+          diagnostics:                       # ブール値、認証中の診断データの記録を有効にします。デフォルト: false。
+          loginPageWait:                     # 整数、スクリプト実行後に待機する時間 (秒)、デフォルト: 5
+          minWaitFor:                        # 整数、各クライアントステートメントに対して待機する最小の waitFor 時間 (秒) を設定します、デフォルト: 0
+</pre>
+
+<p>
+診断情報の詳細については、<a href="auth-report-json.html">認証レポート</a>を参照してください。
+
+<p>
+Zestクライアント要素ステートメントには、ミリ秒単位の「Wait For」パラメーターが含まれています。これは、関連する要素がアクセス可能になるまでZestが待機する時間です。要素が「minWaitFor」時間より前にアクセス可能になった場合、スクリプトは続行し、全時間は待機しません。上記の「minWaitFor」パラメーター（秒単位）を使用すると、スクリプトが待機する時間を延長できます (ただし短縮はできません)。これは、対象サイトの動作が遅くなる場合がある場合に非常に役立ちます。すべての要素が時間制限内に表示される限り、「minWaitFor」時間を増やしても全体の時間には影響しません。ただし、要素がまったく表示されない場合など、失敗ケースでは全体の時間に影響を与える可能性があります。 
+
+<H2>クライアントスパイダーおよびAJAXスパイダー統合</H2>
+
+クライアントスパイダーまたはAJAXスパイダーは、クライアントスクリプト認証を使用するコンテキスト内にユーザーが指定されている場合、自動的にログインを実行します。
+<p>
+これは、以下に詳述されているSelenium統合を使用することに注意してください。そのため、クライアントスパイダーまたはAJAXスパイダーがクライアントスクリプト認証を使用した認証済みスキャンを実行している場合、手動で起動されたブラウザもログインされます。
+
+<H2>Selenium統合</H2>
+
+ZAPが起動するすべてのブラウザを、コンテキストで設定された詳細を使用して最初にログインするよう設定できます。
+<p>
+コアの制限により：
+<ul>
+<li>このアドオンを追加または削除した場合、既存のコンテキストはGUIで更新されません
+<li>クライアントスクリプトベース認証はAPI経由でコンテキストに追加できません (ZAP 2.16.1以降を除く)
+</ul>
+これらの制限は将来のリリースで解決される予定です。 
+
+<p>
+最新のコード: <a href="https://github.com/zaproxy/zap-extensions/blob/main/addOns/authhelper/src/main/java/org/zaproxy/addon/authhelper/ClientScriptBasedAuthenticationMethodType.java">ClientScriptBasedAuthenticationMethodType.java</a>
+
+</BODY>
+</HTML>

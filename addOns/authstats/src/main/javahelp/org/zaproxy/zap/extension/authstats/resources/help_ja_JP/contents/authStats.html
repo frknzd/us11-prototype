@@ -1,0 +1,41 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>
+認証統計情報
+</title>
+</head>
+<body>
+<h1>認証統計情報</h1>
+このアドオンは、スコープ内のすべてのコンテキストに関する認証関連の統計を記録します。<br>
+統計はサイトごとに記録され、以下の内容をカバーします。
+<table>
+<tr><td>stats.auth.<i>component</i>.state.noauth</td><td>コンテキストに認証方法が設定されていません</td></tr>
+<tr><td>stats.auth.<i>component</i>.state.nothtml</td><td>非HTMLレスポンス（ログイン/ログアウトインジケーターが含まれていない可能性が高い）</td></tr>
+<tr><td>stats.auth.<i>component</i>.state.notsuccess</td><td>失敗したHTMLレスポンス（ログイン/ログアウトインジケーターが含まれていない可能性が高い）</td></tr>
+<tr><td>stats.auth.<i>component</i>.state.noindicator</td><td>ログイン/ログアウトインジケーターが定義されていません</td></tr>
+<tr><td>stats.auth.<i>component</i>.state.loggedinandout</td><td>ログインおよびログアウトの両方のインジケーターが存在します</td></tr>
+<tr><td>stats.auth.<i>component</i>.state.loggedin</td><td>ログインインジケーターのみが存在します</td></tr>
+<tr><td>stats.auth.<i>component</i>.state.loggedout</td><td>ログアウトインジケーターのみが存在します</td></tr>
+<tr><td>stats.auth.<i>component</i>.state.unknown</td><td>ログインおよびログアウトのいずれのインジケーターも存在しません</td></tr>
+</table>
+コンポーネントは以下のいずれかです：
+<table>
+<tr><td>ascan</td><td>アクティブスキャナー</td></tr>
+<tr><td>auth</td><td>認証</td></tr>
+<tr><td>fuzz</td><td>ファザー</td></tr>
+<tr><td>manual</td><td>手動リクエスト</td></tr>
+<tr><td>proxy</td><td>プロキシ経由のリクエスト</td></tr>
+<tr><td>spider</td><td>スパイダー</td></tr>
+<tr><td><i>id</i></td><td>上記にリストされていない別のコンポーネントの整数識別子</td></tr>
+</table>
+<p>
+統計はZAP API経由でアクセスできます。
+</p>
+<p>
+
+このアドオンのアイコンは、<a href="https://github.com/yusukekamiyamane/fugue-icons">Fugue icons</a>の<a href="https://github.com/yusukekamiyamane/fugue-icons/blob/master/icons/chart.png">chart.png</a>と<a href="https://github.com/yusukekamiyamane/fugue-icons/blob/master/icons/lock-small.png">lock-small.png</a>から派生しています。
+
+</body>
+</html>

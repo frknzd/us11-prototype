@@ -1,0 +1,40 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<TITLE>レポート生成 – 自動化フレームワーク対応</TITLE>
+</HEAD>
+<BODY>
+	<H1>レポート生成 – 自動化フレームワーク対応</H1>
+	このアドオンは自動化フレームワークに対応しています。
+
+	<H2>ジョブ: report</H2>
+	report ジョブを使用すると、インストールされている任意のレポートテンプレートを使用してレポートを生成できます。
+	<pre>
+  - type: report                       # レポート生成
+    parameters:
+      template:                        # 文字列: テンプレート ID、デフォルト: risk-confidence-html
+      theme:                           # 文字列: テンプレートのテーマ、デフォルト: テンプレートに定義されている最初のテーマ (あれば)
+      reportDir:                       # 文字列: レポートが書き込まれるディレクトリ
+      reportFile:                      # 文字列: レポートファイル名のパターン、デフォルト: {{yyyy-MM-dd}}-ZAP-Report-[[site]]
+      reportTitle:                     # 文字列: レポートのタイトル
+      reportDescription:               # 文字列: レポートの説明
+      displayReport:                   # Boolean: 生成時にレポートを表示するかどうか、デフォルト: false
+    risks:                             # List: このレポートに含めるリスク、デフォルトはすべて
+      - high
+      - medium
+      - low
+      - info
+    confidences:                       # List: このレポートに含める信頼度、デフォルトはすべて
+      - high
+      - medium
+      - low
+      - falsepositive
+    sections:                          # List: このレポートに含めるテンプレートセクション - 該当するテンプレートを参照、デフォルトはすべて
+    sites:                             # List: このレポートに含めるサイト、デフォルトはすべて
+</pre>
+
+	サイトは完全なURLである必要はありません。サイトリスト内の文字列のいずれかを含むサイトはすべて含まれます。サイトリストは変数もサポートしています。
+
+</BODY>
+</HTML>

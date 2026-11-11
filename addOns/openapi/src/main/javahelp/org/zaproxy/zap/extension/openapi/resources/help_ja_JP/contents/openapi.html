@@ -1,0 +1,133 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>
+OpenAPI サポート
+</title>
+</head>
+<body>
+<h1>OpenAPIインポート</h1>
+This add-on allows you to spider and import OpenAPI (Swagger) definitions, versions 1.2, 2.0, 3.0, and 3.1.
+<br>
+<strong>注:</strong> XML コンテンツの生成は現在サポートされていません。
+<br><br>
+このアドオンは、スコープ内にある限り、OpenAPI定義を自動的に検出してスパイダーします。
+<br><br>
+また、 <a href="automation.html">自動化フレームワーク</a>もサポートしています<a href="#"></a>.
+
+<h2>UI</h2>
+「インポート」メニューに以下の項目が追加されます：
+<ul>
+<li>OpenAPI定義のインポート</li>
+</ul>
+このダイアログでは、ターゲットURLフィールドを通じて、OpenAPI定義に存在するサーバーURLを上書き (または存在しない場合は指定) できます。
+インポートの進捗は進行状況タブに表示されます。
+
+<h3>Max Messages</h3>
+The dialogue allows users to limit the number of messages imported.
+A value of <code>0</code> (the default) imports all messages.
+Note that redirects are followed when importing, so this is a soft limit and the number of messages stored may exceed the value set.
+
+<h3>コンテキスト</h3>
+ダイアログでは、オプションでコンテキストを選択することもできます。コンテキストが選択されている場合：
+<ul>
+    <li>インポートされた各エンドポイントは、そのURLが既存の<em>コンテキストに含める</em>正規表現エントリと一致しない限り、コンテキストに含まれます。</li>
+    <li>インポートされた仕様がセッションデータベースに保存されます</li>
+    <li>パスパラメーターを持つエンドポイントに対してデータ駆動型ノードが生成されます</li>
+</ul>
+<strong>注:</strong> コンテキストによって除外されたエンドポイントはインポートされません。
+
+<h3>ユーザー</h3>
+ダイアログでは、オプションでユーザーを選択して、認証済みインポートを実行することもできます。
+
+<h3>ターゲットURLの形式</h3>
+ターゲットURLの形式は次のとおりです：<br>
+<code>scheme://authority/path</code><br>
+すべてのURIコンポーネントはオプションです。注: 通常すべてのURIコンポーネントはオプションです。ただし、ローカルファイルからインポートする場合で、定義にサーバーやスキームの指定がないときは、scheme と authority の指定が必須になります。<br>
+以下は上書き例です：
+<ul>
+<li>authority と path を上書き: <code>localhost/api/</code></li>
+<li>scheme のみを上書き: <code>https://</code></li>
+<li>authority のみを上書き: <code>qa.example.com:9090</code></li>
+<li>path のみを上書き: <code>/dev/v3/</code></li>
+</ul>
+
+<h2>API</h2>
+APIに以下の操作が追加されます：
+<ul>
+<li>ACTION importFile (file, target, contextId, userId, maxMessages)</li>
+<li>ACTION importUrl (url, hostOverride, contextId, userId, maxMessages)</li>
+</ul>
+ <code>target</code> と <code>hostOverride</code> の両方とも、前述の <code>ターゲットURL</code> format explained earlier.
+The optional <code>maxMessages</code> parameter limits the number of messages imported; omit or use <code>0</code> to import all.
+
+The definitions will be imported synchronously and any warnings will be returned.
+
+<h2>データ駆動型ノード</h2>
+OpenAPI定義にパスパラメーターが含まれており、インポート時にコンテキストが指定されている場合、アドオンは自動的にデータ駆動ノードを生成します。コンテキストが指定されていない場合、データ駆動型ノードは生成されません。
+
+例えば、以下のOpenAPI定義は少なくとも1つのデータ駆動ノードを生成します。 
+
+<pre>
+    ...
+    /users/v1/{username}/email:
+      ...
+      parameters:
+        - name: username
+          in: path
+          description: username to update email
+          required: true
+          schema:
+            type: string
+    ...
+</pre>
+
+上記のエンドポイントに対して、以下のノードがサイトツリーに追加されます：
+<pre>
+サイト
+└── http://example.com
+    └── users
+        └── v1
+            └── «username»
+                └── email
+</pre>
+
+インポートされたOpenAPI定義はセッションデータベースに永続化されます。セッションが再読み込みされると、定義を 使用してデータ駆動型ノードが生成され、今後のリクエストのためにマークされます。
+
+<h2>コマンドライン</h2>
+以下のコマンドラインオプションが追加されます：
+<ul>
+<li>-openapifile &lt;filename&gt;  : 指定されたファイル名からOpenAPI定義をインポートします</li>
+<li>-openapiurl &lt;url&gt;  : 指定されたURLからOpenAPI定義をインポートします</li>
+<li>-openapitargeturl &lt;url&gt;  : OpenAPI定義に存在するサーバーURLを上書きするためのターゲットURL</li>
+</ul>
+
+定義は同期的にインポートされ、警告があればコマンドラインに表示されます。
+
+<h2>ユーザー指定値</h2>
+OpenAPI定義をインポートする際はデフォルト値が使用されます。<br>
+これらは、独自の値を指定できるフォームハンドラーアドオンを使用して上書きできます。<br>
+ほとんどの場合、これらは単純な値 (文字列や整数など) ですが、場合によっては構造化された値を指定する必要があります。
+例： <pre>{ "id": 0, "name": "Freda" }</pre>
+
+<h2>統計</h2>
+このアドオンは以下の統計を管理します：
+<ul>
+    <li>openapi.urls.added: OpenAPI定義をインポートする際に追加されたURLの総数</li>
+</ul>
+
+<h2>Scripts</h2>
+The following scripts are included with the add-on:
+
+<h3 id="id-100043">Swagger Secret & Vulnerability Detector</h3>
+This is an active script scan rule. It attempts to find exposed OpenAPI documentation that leaks sensitive secrets such
+as API keys, OAuth client secrets, access tokens, or that runs vulnerable versions of Swagger UI.
+<p>
+    Latest code: <a href="https://github.com/zaproxy/zap-extensions/blob/main/addOns/openapi/src/main/zapHomeFiles/scripts/scripts/active/SwaggerSecretDetector.js">SwaggerSecretDetector.js</a>
+    <br>
+    Alert ID: <a href="https://www.zaproxy.org/docs/alerts/100043/">100043</a>.
+
+
+</body>
+</html>

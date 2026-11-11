@@ -1,0 +1,60 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+    <meta HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+    <title>Interactsh オプション</title>
+</head>
+<body>
+<h1>Interactsh オプション</h1>
+<p>
+    Interactsh オプション画面では、ZAPがInteractshと連携する方法に関する設定を構成できます。
+</p>
+
+<h3>サーバーURL</h3>
+
+<p>このアドレス (ユーザー提供) は、登録とポーリングに使用されるURLを指し示す必要があります。</p>
+<p>有効なURIには、少なくともスキームとホストが含まれます。ホストは動作しているInteractshのインスタンスを実行している必要があります。</p>
+<p>有効なURIの例: <code>https://oast.live</code></p>
+
+<h3>認可トークン</h3>
+
+<p>指定されたサーバーURLのInteractshサーバーが認証を必要とする場合、このトークンの値を指定する必要があります。このトークンはサーバーに対して行われるすべてのリクエストに Authorization ヘッダーの値として追加されます。</p>
+
+<h3>ポーリング頻度</h3>
+
+<p>このオプションを使用すると、Interactsh のポーリング頻度を変更できます。値は秒単位で指定します。許可される最小値は10秒で、最大値は21600秒 (6時間) です。デフォルト値は60秒です。</p>
+
+<h3>アクティブペイロード</h3>
+
+<p>この表には、生成されたすべてのペイロードと対応するカナリー値が一覧表示されます。新しいペイロードを作成するたびに項目が追加されます。「新しいペイロード」ボタンは、サーバーURLや認証トークンを変更すると無効になります。その場合、新しいペイロードを作成するには、変更を元に戻すか、設定を保存してオプション画面を再度開く必要があります。</p>
+
+<h4>ペイロード</h4>
+
+<p>ペイロードはアウトオブバンド攻撃で使用するためのアドレスです。</p>
+
+<h4>カナリア</h4>
+
+<p>カナリー値は、ターゲットのWebアプリケーションが対応するペイロードアドレスにリクエストを行ったときに返される文字列です。これは、ペイロード内のサブドメインを逆順にすることによって生成されます。</p>
+<p>何らかの形でカナリー値を使用することになるWebアプリケーションは、インジェクション攻撃を受けやすい可能性があります。 </p>
+
+<H2>関連情報</H2>
+<table>
+    <tr>
+        <td>&nbsp;&nbsp;</td>
+        <td>
+            <a href="interactsh.html">Interactsh ヘルプ</a></td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;&nbsp;</td>
+        <td><a href="https://github.com/projectdiscovery/interactsh">GitHub の Interactsh</a></td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;&nbsp;</td>
+        <td><a href="https://docs.projectdiscovery.io/tools/interactsh/overview">Interactsh ドキュメント</a></td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+</body>
+</html>

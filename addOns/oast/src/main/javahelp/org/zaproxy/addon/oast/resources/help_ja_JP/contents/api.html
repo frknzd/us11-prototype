@@ -1,0 +1,74 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<TITLE>OAST API</TITLE>
+</HEAD>
+<BODY>
+	<H1>OAST API</H1>
+	APIでは、以下の操作がサポートされています：
+
+	<h3>ビュー</h3>
+	<ul>
+		<li>getActiveScanService: アクティブスキャナーで使用されるサービス (存在する場合) を取得します。</li>
+		<li>getBoastOptions: BOASTオプションを取得します。</li>
+		<li>getCallbackOptions: コールバックオプションを取得します。</li>
+		<li>getDaysToKeepRecords: OASTレコードの保持日数を取得します。</li>
+		<li>getInteractshOptions: Interactshオプションを取得します。</li>
+		<li>getServices: すべてのサービスを取得します。</li>
+	</ul>
+
+
+	<h3>アクション</h3>
+	<ul>
+	
+
+		<li>
+			setActiveScanService (name*): アクティブスキャナーで使用するサービスを設定します。
+			<ul>
+				<li>name: サービスの名前</li>
+			</ul>
+		</li>
+		<li>
+			setBoastOptions (server* pollInSecs*): BOASTオプションを設定します。 	
+			<ul>
+				<li>server: サーバーURL</li>
+				<li>pollInSecs: ポーリング頻度 (秒)</li>
+			</ul>
+		</li>
+		<li>
+			setCallbackOptions (localAddress* remoteAddress* port*): コールバックオプションを設定します。
+			<ul>
+				<li>localAddress: ローカルアドレス</li>
+				<li>remoteAddress: リモートアドレス</li>
+				<li>port: リッスン対象のポート</li>
+			</ul>
+		</li>
+		<li>
+			setDaysToKeepRecords (days*): OASTレコードの保持日数を設定します。
+			<ul>
+				<li>days: 保持する日数</li>
+			</ul>
+		</li>
+		<li>
+			setInteractshOptions (server* pollInSecs* authToken*): Interactshオプションを設定します。
+			<ul>
+				<li>server: サーバーURL</li>
+				<li>pollInSecs: ポーリング頻度 (秒)</li>
+				<li>authToken: Interactsh認証トークン</li>
+			</ul>
+		</li>
+	</ul>
+
+	<H2>関連情報</H2>
+	<table>
+		<tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td>
+            <a href="services/services.html">OASTサービス</a></td>
+        <td>&nbsp;</td>
+		</tr>
+	</table>
+
+</BODY>
+</HTML>

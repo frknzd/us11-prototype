@@ -1,0 +1,26 @@
+name: CI Remote
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Once a month
+    - cron:  '0 8 18 * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: 'temurin'
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          gradle-home-cache-includes: |
+            caches
+            notifications
+      - run: ./gradlew -Dorg.gradle.jvmargs=-Xmx4g --continue --no-parallel test
+        env:
+          ZAP_REMOTE_TESTS: 1

@@ -1,0 +1,63 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>
+Ang WebSocket tab
+</title>
+</head>
+<body>
+<h1>Ang WebSocket tab</h1>
+
+<p>
+Ang mga WebSocket tab ay nagdidispley ng lahat ng mga mensahe mula sa WebSocket na mga koneksyon.
+Habang ang ZAP ay aktibo, bumisita sa hal.: <a href="http://browserquest.mozilla.org/">Mozilla's BrowserQuest</a>
+makita ang mga WebSocket sa pagkilos.
+</p>
+
+<h2>Mga Filter</h2>
+	<h3>Ang Tagapili ng Channel</h3>
+	<p>
+		You can restrict the display of messages to one specific WebSocket
+		channel or all.
+		<br>
+		If you select a specific channel, then the <i>Show handshake</i> button
+		(<img src="images/handshake.png" align="bottom" width="16" height="16" />)
+		becomes enabled. When you click on it, the corresponding HTTP handshake is
+		shown in the Request/Response tab.
+	</p>
+
+	<h3>Ang diyalogo ng Filter</h3>
+	<p>
+		In the filter dialog (<img src="images/054.png" align="bottom" width="16" height="16" />)
+		you can further control which messages are displayed.
+	</p>
+
+<h2>Ang mga breakpoint</h2>
+<p>
+	You can set custom breakpoints using the <i>Add Custom Breakpoints</i>
+	button (<img src="images/break_add.png" align="bottom" width="16" height="16" />).
+	<br>
+	Alternatively you can use the <i>Right click menu</i>.
+</p>
+
+<h2>Kanang klik na menu</h2>
+<p>
+	Ang kanang pagklik sa isang WebSocket na mensahe ay nagdadala ng isang menu na kung saan ay nagpapahintulot sa iyo na:
+</p>
+
+	<h3>Ibukod mula sa WebSocket</h3>
+	<p>
+		WebSocket connections can be excluded from the WebSockets tab by adding
+		an excluded URL to the
+		<i>Session Properties</i>. Pag-klik sa item na ito, ay nagdudulot ng sesyon ang mga katangian na kasama ang URL na paunang napuno.
+		Hindi kasama ang isang WebSocket na koneksyon ay hindi magreresulta sa pangwakas na koneksyon, ngunit ito ay nagpapasa ito nang walang karagdagang pagproseso.
+	</p>
+
+	<h3>Break...</h3>
+	<p>
+		This will bring up the
+		<i>Add Break Point dialog</i> which allows you to set up a custom break point.
+	</p>
+</body>
+</html>

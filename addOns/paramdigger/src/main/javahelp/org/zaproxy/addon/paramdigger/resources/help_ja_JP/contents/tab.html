@@ -1,0 +1,59 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+<title>パラメーターディガー タブ</title>
+</head>
+<body>
+	<h1>パラメーターディガー タブ</h1>
+	<p>
+		パラメーターディガー タブには、<a
+			href="paramdigger.html">パラメーターディガー</a>がスキャン中に特定したパラメーターの集合が表示されます。
+	</p>
+
+	<p>
+		「新規スキャン」ボタンを押すと、<a href="dialog.html">パラメーターディガー ダイアログ</a>が起動し、スキャンするURLを正確に指定できます。<br>
+
+パラメーターディガーは複数のURLで並行して実行でき、各スキャンの結果は「進捗」プルダウンからスキャンを選択することで表示されます。
+	</p>
+
+	<p>ツールバーにはスキャンに関する情報が表示され、それを制御できます。ツールバーには、以下のコントロール/機能を提供するボタンのセットがあります：
+	<ul>
+		<li><img align="bottom" alt="一時停止ボタン" src="images/pause.png">
+			選択されたパラメーターディガースキャンを一時停止 (および <img alt="resume button" src="images/play.png">再開) します。</li>
+		<li><img align="bottom" alt="停止ボタン" src="images/stop.png"> 選択されたパラメーターディガースキャンを停止します。</li>
+		<li><img align="bottom" alt="クリーンアップボタン" src="images/broom.png">
+			完了したスキャンをクリアします。</li>
+	</ul>
+	進捗バーは、選択されたパラメーターディガースキャンがどこまで進行したかを示します。パラメーターディガーには「履歴」タブと「出力」タブの2つのタブがあります。
+	<p>「履歴」タブでは、試行されたURLごとに以下を確認できます：
+	<ul>
+		<li>ID - メッセージのID</li>
+		<li> リクエストタイムスタンプ - ZAPのHTTP送信機能によってリクエストが行われたときのタイムスタンプ</li>
+		<li> レスポンスタイムスタンプ - レスポンスが受信されたときのタイムスタンプ</li>
+        <li>メソッド - 使用されたHTTPメソッド</li>
+        <li>URL - 推測に使用されたURL</li>
+        <li>コード - レスポンスのステータスコード</li>
+        <li>理由 - その特定のステータスコードの背景にある理由</li>
+		<li>RTT - リクエストのラウンドトリップタイム</li>
+	</ul>
+
+	<p>「出力」タブに表示されるパラメーターディガーメッセージごとに、発見されたパラメーターの詳細と、それが検出された理由を確認できます。</p>
+
+	<h2>関連情報</h2>
+	<table>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td><a href="paramdigger.html">パラメーターディガー</a></td>
+			<td>パラメーターディガーの概要について</td>
+		</tr>
+		<tr>
+			<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+			<td><a href="dialog.html">パラメーターディガー ダイアログ</a></td>
+			<td>パラメーターディガー ダイアログの概要について</td>
+		</tr>
+	</table>
+
+</body>
+</html>
+

@@ -1,0 +1,21 @@
+name: Traditional HTML Report with requests and responses
+format: HTML
+mode: HTML
+extension: html
+sections:
+ - chart
+ - alertcount
+ - insights
+ - scriptdiagnostics
+ - scriptdiagnosticsscreenshots
+ - scriptdiagnosticsoutput
+ - sequencedetails
+ - instancecount
+ - passingrules
+ - alertdetails
+ - statistics
+ - params
+themes:
+ - light
+ - dark
+ 

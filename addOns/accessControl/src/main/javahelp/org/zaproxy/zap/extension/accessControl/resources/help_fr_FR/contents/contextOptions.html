@@ -1,0 +1,40 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>
+        Options du Contexte de Contrôle d’Accès
+    </title>
+</head>
+<body>
+<h1>Options du Contexte de Contrôle d’Accès</h1>
+
+<p>
+    Les Options de contexte du Contrôle d’Accès sont disponibles sous forme de panneau pour chaque contexte    lors de l’ouverture de la boîte de dialogue Propriétés de session. Ce panneau permet aux utilisateurs de ZAP de définir les règles d’accès pour chaque utilisateur de chaque contexte.
+</p>
+
+<p>
+    Comme mentionné sur la page <a href="concepts.html">concepts</a>, ZAP utilise une structure d’URL en arborescence. Ainsi, lors de la configuration des règles d’accès, une seule règle doit être définie explicitement pour un sous-arbre entier, tandis que pour les autres nœuds, les règles sont déduites. Trois valeurs possibles peuvent être définies pour n’importe quel nœud du contexte, pour chaque utilisateur
+</p>
+<ul>
+    <li><b>Autorisé</b> - La règle pour le nœud est <i>explicitement</i> définie à autorisé</li>
+    <li><b>Refusé</b> -  La règle pour le nœud est <i>explicitement</i> définie à refusé</li>
+    <li><b>Hérité</b> - La règle pour le nœud est inférée à partir du parent le plus proche disposant d’une règle définie explicitement
+    </li>
+</ul>
+
+<p>Par défaut, les règles de chaque nœud ont la valeur <i>Hérité</i> et le nœud racine à la valeur <i>Inconnu</i>.
+    Ainsi, pour tout nœud ne disposant pas d’un parent avec une règle explicitement définie, la règle inférée prendra par défaut la valeur <i>Inconnu</i>.</p>
+
+<h2>Voir aussi</h2>
+<table>
+    <tr>
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td>
+            <a href="concepts.html">Concepts des Tests de Contrôle d’Accès</a></td>
+        <td>pour une courte introduction au Test de Contrôle d'Accès</td>
+    </tr>
+</table>
+
+</body>
+</html>

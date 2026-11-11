@@ -1,0 +1,90 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<TITLE>
+WebSocketについて
+</TITLE>
+</HEAD>
+<BODY>
+<H1>WebSocketについて</H1>
+
+<H2>ソースコード</H2>
+<a href="https://github.com/zaproxy/zap-extensions/tree/main/addOns/websocket">https://github.com/zaproxy/zap-extensions/tree/main/addOns/websocket</a>
+
+<H2>作成者</H2>
+ZAP 開発チーム
+
+<H2>履歴</H2>
+
+<H3>バージョン 19 - 2019-06-07</H3>
+<ul>
+	<li>イベントの処理/ディスパッチ時の例外を修正</li>
+	<li>WebSocket APIレスポンスにラッパーを追加</li>
+	<li> API実装者が存在しないAPIリクエスト処理時の例外を修正</li>
+	<li>サーバーモードで使用される出力ストリームを修正</li>
+	<li>「その他」API操作のサポートを追加</li>
+	<li>APIオプションを処理</li>
+	<li>API接続のオリジンを検証</li>
+	<li>WebSocketイベントを生成</li>
+	<li>APIエンドポイントの停止を追加</li>
+	<li>フォントとアイコンを正しくスケーリング</li>
+</ul>
+
+
+<H3>バージョン 18 - 2018/08/01</H3>
+<ul>
+	<li>WebSocket接続を再開してメッセージを(再)送信できるようにする (Issue 4290)</li>
+</ul>
+
+<H3>バージョン 17 - 2018/07/13</H3>
+<ul>
+	<li>デーモンモードでもWebSocket送信スクリプトタイプを登録</li>
+	<li>イベントディスパッチ時の例外を修正</li>
+	<li>GUIなしでのアドオンアンインストール時の例外を修正 (Issue 4815)</li>
+	<li>チャネルが想定した状態ではなくなった際のイベントコンシューマーを削除</li>
+</ul>
+
+<H3>バージョン 16 - 2018/06/05</H3>
+<ul>
+	<li>About ヘルプページを調整</li>
+	<li>チャネルが閉じられた際にイベントコンシューマーを削除</li>
+	<li>送信者スクリプトをデフォルトで有効化しない。</li>
+	<li>メッセージエディターによる CLOSE メッセージの送信を修正 (Issue 4657)</li>
+	<li>不足していたエラーメッセージを追加</li>
+	<li>ポップアップメニュー項目の削除を修正</li>
+	<li>WebSocketタブでペイロードによるフィルタリングを許可 (Issue 1382)</li>
+	<li>WebSocketタブとメッセージパネルでバイナリペイロードの文字列表現を表示</li>
+</ul>
+
+<H3>バージョン 15</H3>
+<ul>
+	<li>コアのフィルター機能の使用を削除</li>
+	<li>テキストビューにエラーメッセージが表示されている場合は、ビュー切り替え時にメッセージを設定しない (Issue 4108)</li>
+	<li>Issue #4149 を修正するためにリワインドを追加</li>
+	<li>Websocket 送信スクリプトインターフェースを追加</li>
+	<li>API サポートを追加</li>
+</ul>
+
+<H3>バージョン 14</H3>
+<ul>
+	<li>2.7.0向けに更新しました。</li>
+</ul>
+
+<H3>バージョン 13</H3>
+
+<ul>
+	<li>コンテキストのインクルード/エクスクルードのポップアップメニュー項目を修正</li>
+	<li>ヘルプボタンを修正/訂正</li>
+	<li>ファザースクリプトタイプを既定で有効に設定 (Issue 2997)</li>
+	<li>セッションプロパティパネルのWebSocketsからの除外を正規化</li>
+	<li>WebSocketSenderListener を実装</li>
+	<li>UTF-8変換にJREデコーダーを使用し、不正なペイロードをログ (デバッグ) に記録 (Issue 3324 関連)</li>
+	<li>WebSocketタブへのフォーカスを一度だけ行う (Issue 3747)</li>
+	<li>コアの変更に合わせるためのマイナーなコード調整</li>
+	<li>Java 9向けのコード変更 (Issue 2602)</li>
+	<li>Sec-WebSocket-Extensions ヘッダーを削除 (Issue 3324)</li>
+	<li>ファザーWebSocketプロセッサスクリプトタイプに説明を追加</li>
+	<li>ファザーテンプレートの更新 (JSDocを使用し、誤字を修正)</li>
+</ul>
+</BODY>
+</HTML>

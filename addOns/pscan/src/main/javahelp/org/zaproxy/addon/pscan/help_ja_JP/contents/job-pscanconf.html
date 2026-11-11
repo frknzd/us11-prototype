@@ -1,0 +1,42 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<TITLE>
+パッシブスキャナー 自動化フレームワーク - passiveScan-config ジョブ
+</TITLE>
+</HEAD>
+<BODY>
+<H1>パッシブスキャナー 自動化フレームワーク - passiveScan-config ジョブ</H1>
+
+このジョブでは、パッシブスキャンの設定を管理できます。
+<p>
+この内容は、動画「<a href="https://youtu.be/1fcpU54N-mA">ZAP Chat 08 Automation Framework Part 2 - Environment</a>」で解説されています。
+<p>
+パッシブスキャナーは、ZAPによって生成された、またはZAPを介してプロキシされたすべてのリクエストとレスポンスに対して実行されます。パッシブスキャンの設定を行う場合は、通常、他のジョブを実行する前に実行する必要があります。ただし、異なるジョブで異なるパッシブスキャンの設定を使用したい場合は、このジョブを後で、または複数回実行することもできます。
+
+<H2>YAML</H2>
+
+<pre>
+  - type: passiveScan-config           # パッシブスキャンの設定
+    parameters:
+      maxAlertsPerRule:                # Int: ルールごとに発行する最大アラート数。デフォルト: 0 (無制限)
+      scanOnlyInScope:                 # Bool: スコープ内のURLのみをスキャンするかどうか (推奨)。デフォルト: true
+      maxBodySizeInBytesToScan:        # Int: スキャンする最大ボディサイズ。デフォルト: 0 (すべてのメッセージをスキャン)
+      enableTags:                      # Bool: パッシブスキャンタグを有効にするか。デフォルト: false (有効にするとパフォーマンスに影響を与える可能性があります)
+      disableAllRules:                 # Bool: trueの場合、rulesセクションの設定を適用する前にすべてのルールを無効にします。デフォルト: false
+    rules:                             # デフォルト設定を上書きする1つ以上のパッシブスキャンルールと関連設定のリスト
+    - id:                              # Int: ルールID。https://www.zaproxy.org/docs/alerts/を参照
+      name:                            # 文字列: ドキュメントのためのルール名。必須ではありませんし、実際には使用されません
+      threshold:                       # 文字列: このルールのアラートしきい値。Off、Low、Medium、High のいずれか。デフォルト: Medium
+</pre>
+
+このジョブは、プラン開始時に現在のパッシブスキャンの設定を保存し、プラン終了時にリセットします。これは主に scanOnlyInScope の設定が変更されないようにするためです。ジョブではデフォルトが `true` ですが、GUIでは `false` です。
+<p>
+<code>disableAllRules</code> を <code>true</code> に設定した場合、プランが終了しても無効のままになることに注意してください。プラン終了時に自動的に再有効化すると、例えば <a href="job-pscanwait.html">passiveScan-wait</a> ジョブが使用されていない場合、 または使用されていても maxDuration オプションが設定されている場合に、パッシブスキャンキューが処理されている間にルールが有効になる可能性があります。
+
+<p>
+バージョン0.16.0以前では、このジョブをデフォルト設定で実行すると、GUIの scanOnlyInScope が `true` に変更されていました。多くのユーザーはスコープを設定せずにGUIを使用するため、これは混乱を招くことが判明しました。scanOnlyInScope が `true` に設定され、スコープが定義されていない場合、パッシブスキャンアラートは発行されません。
+
+</BODY>
+</HTML>
+

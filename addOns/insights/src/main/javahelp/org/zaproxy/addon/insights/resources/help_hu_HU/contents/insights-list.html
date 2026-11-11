@@ -1,0 +1,202 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<TITLE>
+Insights List
+</TITLE>
+</HEAD>
+<BODY>
+<H1>Insights List</H1>
+
+This is the full set of Insights currently supported:
+
+<table>
+
+<tr>
+<th>Key
+<th>Description
+<th>Site
+<th>Type
+<th>Low 
+<th>High 
+
+<tr>
+<td>insight.database.full
+<td>Database full
+<td>
+<td>
+<td>High
+<td>High
+
+<tr>
+<td>insight.diskspace.full
+<td>Diskspace full
+<td>
+<td>
+<td>High
+<td>High
+
+<tr>
+<td>insight.memory.usage
+<td>Percentage of memory used
+<td>
+<td>Mem
+<td>Medium
+<td>High
+
+<tr>
+<td>insight.log.error
+<td>Count of ZAP errors
+<td>
+<td>
+<td>Low
+<td>Low
+
+<tr>
+<td>insight.log.warn
+<td>Count of ZAP warnings
+<td>
+<td>
+<td>Low
+<td>Low
+
+<tr>
+<td>insight.network.failure
+<td>Percentage of network failures
+<td>
+<td>Msg
+<td>Low
+<td>Med
+
+<tr>
+<td>insight.auth.failure
+<td>Percentage of authentication failures
+<td>Yes
+<td>Msg
+<td>Low
+<td>High
+
+<tr>
+<td>insight.code.1xx
+<td>Percentage of 1xx response codes
+<td>Yes
+<td>Msg
+<td>Info
+<td>Info
+
+<tr>
+<td>insight.code.2xx
+<td>Percentage of 2xx response codes
+<td>Yes
+<td>Msg
+<td>Info
+<td>Info
+
+<tr>
+<td>insight.code.3xx
+<td>Percentage of 3xx response codes
+<td>Yes
+<td>Msg
+<td>Info
+<td>Info
+
+<tr>
+<td>insight.code.4xx
+<td>Percentage of 4xx response codes
+<td>Yes
+<td>Msg
+<td>Info
+<td>Medium
+
+<tr>
+<td>insight.code.5xx
+<td>Percentage of 5xx response codes
+<td>Yes
+<td>Msg
+<td>Info
+<td>Low
+
+<tr>
+<td>insight.response.slow
+<td>Percentage of slow responses
+<td>Yes
+<td>Msg
+<td>Info
+<td>Low
+
+<tr>
+<td>insight.endpoint.content.CCC
+<td>Percentage of responses with content-type CCC
+<td>Yes
+<td>
+<td>Info
+<td>Info
+
+<tr>
+<td>insight.endpoint.method.MMM
+<td>Percentage of responses with method MMM
+<td>Yes
+<td>
+<td>Info
+<td>Info
+
+<tr>
+<td>insight.endpoint.total
+<td>Total number of endpoints
+<td>Yes
+<td>
+<td>Info
+<td>Info
+
+</table>
+<p>
+The columns show the Insight <a href="insights-fields.html">fields</a> with the following additions:
+
+<H3>Site</H3>
+Indicates if the Insight is specific to a site (which will be specified). Otherwise Insights are not site specific.
+
+<H3>Type</H3>
+
+The type of the insight, which indicates which of the threshold <a href="insights-options.html">options</a> it will use:
+<ul>
+<li>Mem: Will use the Memory Thresholds 
+<li>Msg: Will use the  Message Thresholds
+<li>&lt;blank&gt; Will not use any thresholds
+</ul>
+
+<H3>Low (Level)</H3>
+
+This column shows the Level at which it will be reported if it exceeds the related Low <em>threshold</em>.
+<p>
+Info level Insights will always be reported.
+
+<H3>High (Level)</H3>
+
+This column shows the Level at which it will be reported if it exceeds the related High <em>threshold</em>.
+
+<H3>Thresholds and Levels</H3>
+
+Thresholds and Levels are separate things, and the names of the Low and High thresholds do not
+have to match the Level that is reported:
+<ul>
+<li>A <em>threshold</em> is a number you configure in the <a href="insights-options.html">options</a>.
+It decides <em>when</em> an Insight is reported at something other than Info.
+<li>A <em>Level</em> says <em>how significant</em> the Insight is. 
+It is fixed for each Insight, as shown in the table above.
+</ul>
+For each Insight which uses thresholds, the Level reported depends on the value:
+<ul>
+<li>Below the Low threshold: reported at Info level (if the value is not zero)
+<li>At or above the Low threshold, but below the High threshold: reported at the level in the Low column, with the reason "Exceeded Low"
+<li>At or above the High threshold: reported at the level in the High column, with the reason "Exceeded High"
+</ul>
+For example, with the default Message thresholds (5% and 50%), if 10% of the responses are 5xx then insight.code.5xx is
+reported at Info level, as it is above the Low threshold and the Low column says Info.
+If 60% are 5xx then it is reported at Low level, as it has exceeded the High threshold and the High column says Low.
+If 60% are 4xx then insight.code.4xx is reported at Medium level.
+<p>
+Message based Insights are only reported above Info level once at least 1000 messages have been sent
+(5 for authentication). Insights with no thresholds are always reported at Info level.
+
+</BODY>
+</HTML>

@@ -1,0 +1,118 @@
+import org.zaproxy.gradle.addon.AddOnStatus
+
+description = "Imports and spiders OpenAPI definitions."
+
+zapAddOn {
+    addOnName.set("OpenAPI Support")
+    addOnStatus.set(AddOnStatus.BETA)
+
+    manifest {
+        author.set(
+            "ZAP Dev Team plus Joanna Bona, Nathalie Bouchahine, Artur Grzesica, Mohammad Kamar, " +
+                "Markus Kiss, Michal Materniak, Marcin Spiewak, and SDA SE Open Industry Solutions",
+        )
+        url.set("https://www.zaproxy.org/docs/desktop/addons/openapi-support/")
+        extensions {
+            register("org.zaproxy.zap.extension.openapi.automation.ExtensionOpenApiAutomation") {
+                classnames {
+                    allowed.set(listOf("org.zaproxy.zap.extension.openapi.automation"))
+                }
+                dependencies {
+                    addOns {
+                        register("automation") {
+                            version.set(">=0.31.0")
+                        }
+                    }
+                }
+            }
+            register("org.zaproxy.zap.extension.openapi.spider.ExtensionOpenApiSpider") {
+                classnames {
+                    allowed.set(listOf("org.zaproxy.zap.extension.openapi.spider"))
+                }
+                dependencies {
+                    addOns {
+                        register("spider") {
+                            version.set(">=0.12.0")
+                        }
+                    }
+                }
+            }
+            register("org.zaproxy.zap.extension.openapi.llm.ExtensionOpenApiLlm") {
+                classnames {
+                    allowed.set(listOf("org.zaproxy.zap.extension.openapi.llm"))
+                }
+                dependencies {
+                    addOns {
+                        register("llm")
+                    }
+                }
+            }
+            register("org.zaproxy.zap.extension.openapi.scripts.ExtensionOpenApiScripts") {
+                classnames {
+                    allowed.set(listOf("org.zaproxy.zap.extension.openapi.scripts"))
+                }
+                dependencies {
+                    addOns {
+                        register("scripts") {
+                            version.set(">=45.15.0")
+                        }
+                        register("graaljs")
+                    }
+                }
+            }
+        }
+        dependencies {
+            addOns {
+                register("commonlib") {
+                    version.set(">= 1.43.0 & < 2.0.0")
+                }
+            }
+        }
+    }
+
+    apiClientGen {
+        api.set("org.zaproxy.zap.extension.openapi.OpenApiAPI")
+        messages.set(file("src/main/resources/org/zaproxy/zap/extension/openapi/resources/Messages.properties"))
+    }
+}
+
+configurations {
+    "implementation" {
+        // Not needed:
+        exclude(group = "com.google.code.findbugs", module = "jsr305")
+    }
+}
+
+dependencies {
+    zapAddOn("automation")
+    zapAddOn("commonlib")
+    zapAddOn("llm")
+    zapAddOn("spider")
+
+    implementation(libs.openapi.swagger.parser) {
+        // Provided by commonlib add-on:
+        exclude(group = "com.fasterxml.jackson")
+        exclude(group = "com.fasterxml.jackson.core")
+        exclude(group = "com.fasterxml.jackson.dataformat")
+        exclude(group = "com.fasterxml.jackson.datatype")
+    }
+    implementation(libs.openapi.swagger.compatSpecParser) {
+        // Provided by commonlib add-on:
+        exclude(group = "com.fasterxml.jackson")
+        exclude(group = "com.fasterxml.jackson.core")
+        exclude(group = "com.fasterxml.jackson.dataformat")
+        exclude(group = "com.fasterxml.jackson.datatype")
+        // Not needed:
+        exclude(group = "com.github.java-json-tools", module = "json-schema-validator")
+        exclude(group = "org.apache.httpcomponents", module = "httpclient")
+    }
+    implementation("org.apache.commons:commons-lang3:3.18.0")
+    implementation(libs.log4j.slf4j2)
+
+    testImplementation(parent!!.childProjects.get("commonlib")!!.sourceSets.test.get().output)
+    testImplementation(parent!!.childProjects.get("graaljs")!!.sourceSets.test.get().output)
+    testImplementation(libs.log4j.core)
+    testImplementation(project(":testutils"))
+    testImplementation(project(":addOns:graaljs"))
+    testImplementation(project(":addOns:scripts"))
+}

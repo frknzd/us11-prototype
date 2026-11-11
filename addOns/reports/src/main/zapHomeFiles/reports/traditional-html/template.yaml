@@ -1,0 +1,14 @@
+name: Traditional HTML Report
+format: HTML
+mode: HTML
+extension: html
+sections:
+ - alertcount
+ - insights
+ - scriptdiagnostics
+ - scriptdiagnosticsscreenshots
+ - scriptdiagnosticsoutput
+ - sequencedetails
+ - instancecount
+ - alertdetails
+ 

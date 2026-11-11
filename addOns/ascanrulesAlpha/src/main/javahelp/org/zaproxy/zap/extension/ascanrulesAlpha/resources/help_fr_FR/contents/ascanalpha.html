@@ -1,0 +1,51 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<title>
+Active Scan Rules - Alpha
+</title>
+</head>
+<body>
+<h1>Active Scan Rules - Alpha</h1>
+The following alpha status active scan rules are included in this add-on:
+
+<h2 id="id-40015">LDAP Injection</h2>
+LDAP Injection may be possible. It may be possible for an attacker to bypass authentication controls, and to view and modify arbitrary data in the LDAP directory.
+Skips messages which originally resulted in a client or server error response status code.
+<p>
+Latest code: <a href="https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/LdapInjectionScanRule.java">LdapInjectionScanRule.java</a>
+<br>
+Alert ID: <a href="https://www.zaproxy.org/docs/alerts/40015/">40015</a>.
+
+<h2 id="id-40024">SQL Injection - SQLite (Time Based)</h2>
+This active scan rule attempts to inject SQLite specific commands into parameter values and analyzes the timing of server responses to see if the commands were effectively executed on the server (indicating a successful SQL injection attack).
+<p>
+Latest code: <a href="https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/SqlInjectionSqLiteTimingScanRule.java">SqlInjectionSqLiteTimingScanRule.java</a>
+<br>
+Alert ID: <a href="https://www.zaproxy.org/docs/alerts/40024/">40024</a>.
+
+<h2 id="id-40039">Web Cache Deception</h2>
+This rule attempts to identify Web Cache Deception vulnerabilities. It checks whether a static path appended to original URIs can be used to leak sensitive user information or not.
+<ul>
+    <li>User must be authenticated before using this rule</li>
+</ul>
+Latest code: <a href="https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/java/org/zaproxy/zap/extension/ascanrulesAlpha/WebCacheDeceptionScanRule.java">WebCacheDeceptionScanRule.java</a>
+<br>
+Alert ID: <a href="https://www.zaproxy.org/docs/alerts/40039/">40039</a>.
+
+<h2 id="id-100044">Suspicious Input Transformation</h2>
+This is an active script scan rule. It detects various types of suspicious input transformations that may indicate
+potential security vulnerabilities such as template injection, expression evaluation, quote consumption, and issues
+related to unicode normalization.
+<p>
+This rule is largely adapted from the "Suspect Transform" check included in the ActiveScan++ extension for Burp
+Suite by
+Albinowax: <a href="https://github.com/albinowax/ActiveScanPlusPlus/blob/master/src/burp/SuspectTransform.java">SuspectTransform.java</a>.
+
+<p>
+Latest code: <a href="https://github.com/zaproxy/zap-extensions/blob/main/addOns/ascanrulesAlpha/src/main/zapHomeFiles/scripts/scripts/active/SuspiciousInputTransformation.js">SuspiciousInputTransformation.js</a>
+<br>
+Alert ID: <a href="https://www.zaproxy.org/docs/alerts/100044/">100044</a>.
+
+</body>
+</html>
