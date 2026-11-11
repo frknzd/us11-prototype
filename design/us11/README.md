@@ -50,6 +50,15 @@ decisions D1–D16 settled with the team).
   that boxes do not overlap and connectors do not pass through unrelated boxes. This does not
   claim that every edge crossing or label collision has been eliminated.
 
+## Prototype implementation refinements
+
+This is the acceptance copy for the separate local prototype, not an assertion that every planned
+case has passed. Actual outcomes and implementation refinements are in
+`../../docs/implementation-status.md`; a runnable walkthrough is in `../../docs/demo-walkthrough.md`.
+The class diagram remains the design baseline; additive implementation helpers and atomic edit APIs
+are recorded in the test plan's Implementation notes. Unsafe pattern parts start as variables
+under SPEC-U08, resolving the contradictory original whitespace-literal example in PD8.
+
 ## Refinements of the plan made while drawing
 
 | Plan said | Documents say | Why |
@@ -86,14 +95,14 @@ for d in "US11 domain model" "US11 class diagram"; do
 done
 ```
 
-The SVG, draw.io and layout files made for version 0.1 are kept outside this folder in
-`../../.local/us11-other-formats/`.
+Only PNGs and editable PlantUML sources are published here. The workspace's historical
+SVG/draw.io/layout backups were not copied into this repository.
 
 ## Checks
 
 ```sh
-python3 ../../.local/diagram-check/check_us11_docs.py          # report only
-python3 ../../.local/diagram-check/check_us11_docs.py --write  # also update US11 coverage.md §5, §6.2
+python3 ../../scripts/check_design_docs.py          # design traceability only, not application acceptance
+python3 ../../scripts/check_design_docs.py --write  # also update US11 coverage.md §5, §6.2
 ```
 
 Last run (version 0.1): every `.puml` passes PlantUML's syntax check; all 128 messages of the sequence diagrams are methods of the US11 class diagram or of

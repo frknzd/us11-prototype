@@ -61,6 +61,15 @@
 - Observer refresh signals now include unmatched data/new patterns without changing recorded-call return semantics or counts. Namespace Clear also clears unmatched counts when there are zero matched calls. Associated dialogs are disposed with their namespace/panel.
 - Shared test-plan DOCX updated to history 0.1.20 with the refinement and UI acceptance checks after a concurrent-edit check and backup.
 
+## Checkpoint 7 — demonstration and documentation
+
+- Added standard-library loopback fixture (`demo-server.py`, default 8092) and explicit-proxy traffic generator (`demo-traffic.py`, default 8091). Proxy environment bypasses do not affect these requests. Case groups cover neutral/valid/invalid, JSON/form, nested fields, malformed encoding/body, duplicate values/headers, precision, preflight, unmatched paths and limits.
+- Ran every demo case through the isolated proxy: fixture requests returned expected 200/201/204 statuses; no public sites were contacted. This checks transport/fixtures, not compliance outcomes unless the walkthrough's spec has been configured in the UI.
+- Added a complete hands-on walkthrough, repository/add-on run/build/safe-stop documentation and packaged US11 help. Added a stop helper that refuses to signal processes lacking this checkout's exact runtime/profile markers.
+- Copied the required baseline diagram/rendering/checker sources so design documents are self-contained. Prototype design checker reports **0 problems**; it is still only design traceability, not proof of application acceptance.
+- The Help add-on is intentionally not installed in the prototype (mandatory add-ons only). The packaged help HTML is available directly; manual Help navigation is pending unless the user requests that extra core add-on.
+- Build, formatting, **605 tests** and packaging pass after documentation changes. No remote exists.
+
 ## Pending
 
-Persistent demo scripts/documentation and full per-case acceptance/coverage are not yet finished. Remaining manual cases, including help availability and human review of interaction ergonomics, must be reported separately from the automated GUI smoke.
+Final per-case acceptance/coverage audit and handover. Remaining manual cases, including Help navigation and human review of interaction ergonomics, must be reported separately from the automated GUI smoke.

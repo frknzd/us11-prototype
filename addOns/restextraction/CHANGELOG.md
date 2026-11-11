@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## Unreleased
 
 ### Added
+- US11 private prototype: immutable operation specifications, strict request parsing and exact
+  String/Integer/Decimal/Base64 checks, ranges, required fields and nested JSON selectors.
+- Specification editor, report-time rejudging, Check column, symbolic diagnostics, compliance
+  counts, invalid-only filters and request information in details/documentation.
+- Bounded unmatched-path counts with a separate panel and literal/variable chip pattern builder.
+- Isolated local runtime, loopback demonstration and opt-in real ZAP GUI smoke tooling.
 - First version of the add-on. It records the calls to a REST API that go through the ZAP proxy and
   shows them as documentation.
 - API namespaces with a base URL (scheme, host, optional port and base path), each started and

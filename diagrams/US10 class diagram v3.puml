@@ -1,0 +1,490 @@
+@startuml US10 class diagram v3
+' v3 = v2 (Mathias, 10 Nov 2026) brought up to date with origin/us10/feat/call-filters (b0b415d49a),
+' which contains MRs !26 to !32: namespace tree, call table, remove and clear, panel polish, readable
+' documentation (D16), bodies only in the detail view (D15), sorting and filtering the calls.
+
+title US10 class diagram v3
+
+top to bottom direction
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI"
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 70
+skinparam ArrowColor #555555
+skinparam class {
+    BackgroundColor white
+    BorderColor #999999
+    HeaderBackgroundColor white
+}
+skinparam package {
+    BackgroundColor #F7F7F7
+    BorderColor #BBBBBB
+    FontStyle normal
+    FontColor #555555
+    Style rectangle
+}
+skinparam note {
+    BackgroundColor #FFF4DA
+    BorderColor #D8C9A3
+}
+hide circle
+hide empty members
+hide stereotype <<zap>> circle
+
+' ============================================================ ZAP
+package "ZAP (existing): only the classes we extend, implement or call; … = members left out" as zap {
+    abstract class ExtensionAdaptor <<abstract>> {
+        …
+        --
+        + hook(extensionHook: ExtensionHook): void
+        + getUIName(): String
+        + canUnload(): boolean
+        + unload(): void
+        + hasView(): boolean
+        …
+    }
+    class ExtensionHook {
+        …
+        --
+        + addProxyListener(listener: ProxyListener): void
+        + getHookView(): ExtensionHookView
+        …
+    }
+    class ExtensionHookView {
+        …
+        --
+        + addStatusPanel(panel: AbstractPanel): void
+        …
+    }
+    interface ProxyListener <<interface>> {
+        + onHttpRequestSend(msg: HttpMessage): boolean
+        + onHttpResponseReceive(msg: HttpMessage): boolean
+        + getArrangeableListenerOrder(): int
+    }
+    class HttpMessage {
+        …
+        --
+        + getRequestHeader(): HttpRequestHeader
+        + getResponseHeader(): HttpResponseHeader
+        + getResponseBody(): HttpResponseBody
+        …
+    }
+    class AbstractPanel {
+        …
+        --
+        …
+    }
+}
+
+note as N_Layers
+    **Layers** (v3: v2 + remove and clear, call table and filters, D15 and D16)
+    * **ZAP adapter** (input): turns ZAP's events into our input format ""ApiCall"".
+      The only layer that knows ZAP's message API.
+    * **Presentation** (output): panel and writer. They talk only to the controller
+      and read only the report values.
+    * **Domain**: ""RestExtractor"" is the controller at its border. Inside, objects
+      talk to each other directly. Input ""ApiCall"", output ""ApiReport"".
+    * Endpoint templates are relative to their namespace (""/posts/[POST_ID]/comments""):
+      origin and base path are checked once, in ""ApiNamespace"".
+end note
+
+' ============================================================ ZAP adapter
+package "ZAP adapter layer (input), org.zaproxy.addon.restextraction" as adapter {
+    class ExtensionRestExtraction {
+        + hook(extensionHook: ExtensionHook): void
+        + getUIName(): String
+        + getDescription(): String
+        + canUnload(): boolean
+    }
+    class RestTrafficListener {
+        + RestTrafficListener(extractor: RestExtractor)
+        + onHttpRequestSend(msg: HttpMessage): boolean
+        + onHttpResponseReceive(msg: HttpMessage): boolean
+        + getArrangeableListenerOrder(): int
+        - toApiCall(msg: HttpMessage): ApiCall
+    }
+}
+
+note as N_RestTrafficListener
+    **RestTrafficListener** (Adapter, Indirection)
+
+    ""onHttpResponseReceive(msg):""
+    ""  extractor.record(toApiCall(msg))""
+    ""  return true  // never block traffic""
+    ""onHttpRequestSend(msg): return true""
+
+    ""toApiCall"" reads method, URL without query, status code,
+    response headers and body from ""msg""; a method not in
+    the enum becomes ""OTHER"". A body above 64 KB is cut and a
+    binary body is replaced by a mark.
+end note
+
+' ============================================================ Presentation
+package "Presentation layer (output), org.zaproxy.addon.restextraction.ui" as ui {
+    class RestExtractionPanel {
+        - showFullBody: boolean = false
+        --
+        + RestExtractionPanel(extractor: RestExtractor)
+        + callRecorded(ns: ApiNamespace): void
+        - onAddNamespace(): void
+        - onAddEndpoint(): void
+        - onStartStop(): void
+        - onRemove(): void
+        - onClear(): void
+        - onSelectNamespace(): void
+        - onSelectCall(): void
+        - onToggleFullBody(): void
+        - onFilter(): void
+        - showReport(ns: ApiNamespace): void
+        - showCalls(report: ApiReport): void
+    }
+    class CallTableModel {
+        - rows: List<Row>
+        --
+        + setEndpoints(endpoints: List<EndpointReport>): void
+        + getCallAt(row: int): RecordedCall
+        + rowOf(call: RecordedCall): int
+        + matches(row: int, method: HttpMethod, text: String): boolean
+        + getRowCount(): int
+        + getColumnCount(): int
+        + getColumnName(column: int): String
+        + getColumnClass(column: int): Class<?>
+        + getValueAt(row: int, column: int): Object
+    }
+    class ApiDocumentationWriter {
+        + write(report: ApiReport): String
+        + formatBody(responseHeaders: String, body: String): String
+        - writeEndpoint(endpoint: EndpointReport): String
+        - writeValues(endpoint: EndpointReport): String
+        - writeCall(call: RecordedCall): String
+        - escape(text: String): String
+    }
+}
+
+note as N_ApiDocumentationWriter
+    **ApiDocumentationWriter**
+    * Per endpoint: the count per method and the values seen per variable.
+      Per call: method, status code, arguments and the response headers. No bodies (D15).
+    * ""formatBody"" gives the body of one call for the detail view of the panel,
+      indented when it is JSON. The panel only asks for it when Full body is ticked.
+    * Every value from traffic goes through ""escape"" before it goes into the HTML,
+      so a ""<script>"" in a response is shown as text and never runs.
+    * The panel passes ""ns"" and the ""ApiReport"" on as parameters only
+      (those dependencies are not drawn).
+end note
+
+note as N_CallTableModel
+    **CallTableModel** (the rows of the Calls table)
+
+    One row per call: time, method, status code, endpoint and arguments. The calls of
+    several endpoints are merged by time. ""setEndpoints"" only reports the new rows when
+    the old ones did not change, so the selection and scroll position stay.
+    ""matches"" is the filter on method and text (ignoring case) behind the panel's row
+    filter. ""Row"" is a private pair of template and ""RecordedCall"".
+end note
+
+package "Java Swing (existing)" as swing {
+    abstract class AbstractTableModel <<abstract>> {
+        …
+        --
+        …
+    }
+}
+
+' ============================================================ Domain
+package "Domain layer, controller at its border (org.zaproxy.addon.restextraction.model): no ZAP or Swing imports" as model {
+    class RestExtractor {
+        + addNamespace(baseUrl: String): ApiNamespace
+        + addEndpoint(ns: ApiNamespace, template: String): Endpoint
+        + removeNamespace(ns: ApiNamespace): void
+        + removeEndpoint(ns: ApiNamespace, template: String): void
+        + clear(ns: ApiNamespace): void
+        + clearEndpoint(ns: ApiNamespace, template: String): void
+        + startExtraction(ns: ApiNamespace): void
+        + stopExtraction(ns: ApiNamespace): void
+        + record(call: ApiCall): void
+        + getReport(ns: ApiNamespace): ApiReport
+        + addObserver(observer: ExtractionObserver): void
+    }
+    interface ExtractionObserver <<interface>> {
+        + callRecorded(ns: ApiNamespace): void
+    }
+    class ApiNamespace {
+        - baseUrl: String
+        - scheme: String
+        - host: String
+        - port: int
+        - extracting: boolean
+        --
+        + ApiNamespace(baseUrl: String)
+        + getBaseUrl(): String
+        + isExtracting(): boolean
+        + addEndpoint(template: String): Endpoint
+        + removeEndpoint(template: String): void
+        + start(): void
+        + stop(): void
+        + record(call: ApiCall): boolean
+        + clear(): void
+        + clearEndpoint(template: String): void
+        + createReport(): ApiReport
+        - sameOrigin(url: URI): boolean
+    }
+    class Endpoint {
+        + Endpoint(template: String)
+        + getTemplate(): String
+        + record(call: ApiCall, path: UrlPath): boolean
+        + clear(): void
+        + createReport(): EndpointReport
+        - {static} countCalls(calls: List<RecordedCall>, method: HttpMethod): int
+    }
+    class EndpointPattern {
+        - template: String
+        --
+        + EndpointPattern(template: String)
+        + matches(path: UrlPath): boolean
+        + argumentsOf(path: UrlPath): Map<String, String>
+        + getTemplate(): String
+    }
+    abstract class PathSegment <<abstract>> {
+        ~ {abstract} matches(part: String): boolean <U+007B>abstract}
+        ~ addArgument(part: String, args: Map<String, String>): void
+    }
+    class LiteralSegment {
+        - text: String
+        --
+        ~ LiteralSegment(text: String)
+        ~ matches(part: String): boolean
+    }
+    class VariableSegment {
+        - name: String
+        --
+        ~ VariableSegment(name: String)
+        ~ matches(part: String): boolean
+        ~ addArgument(part: String, args: Map<String, String>): void
+    }
+    class UrlPath {
+        - parts: List<String>
+        --
+        + UrlPath(path: String)
+        + startsWith(prefix: UrlPath): boolean
+        + after(prefix: UrlPath): UrlPath
+        + size(): int
+        + part(index: int): String
+    }
+    class ApiReport {
+        - baseUrl: String
+        --
+        + ApiReport(baseUrl: String, endpoints: List<EndpointReport>)
+        + getBaseUrl(): String
+        + getEndpoints(): List<EndpointReport>
+    }
+    class EndpointReport {
+        - template: String
+        - callCounts: Map<HttpMethod, Integer>
+        - valuesSeen: Map<String, Map<String, Integer>>
+        --
+        + EndpointReport(template: String, callCounts: Map<HttpMethod, Integer>, calls: List<RecordedCall>)
+        + getTemplate(): String
+        + getCallCounts(): Map<HttpMethod, Integer>
+        + getCalls(): List<RecordedCall>
+        + getValuesSeen(): Map<String, Map<String, Integer>>
+    }
+    class RecordedCall {
+        - arguments: Map<String, String>
+        --
+        + RecordedCall(call: ApiCall, arguments: Map<String, String>)
+        + getCall(): ApiCall
+        + getArguments(): Map<String, String>
+    }
+    class ApiCall {
+        - method: HttpMethod
+        - url: String
+        - statusCode: int
+        - responseHeaders: String
+        - responseBody: String
+        - time: Instant = Instant.now()
+        --
+        + ApiCall(method: HttpMethod, url: String, statusCode: int, responseHeaders: String, responseBody: String)
+        + getMethod(): HttpMethod
+        + getUrl(): String
+        + getStatusCode(): int
+        + getResponseHeaders(): String
+        + getResponseBody(): String
+        + getTime(): Instant
+    }
+    enum HttpMethod <<enumeration>> {
+        GET
+        POST
+        PUT
+        DELETE
+        PATCH
+        HEAD
+        OPTIONS
+        OTHER
+        --
+        + {static} fromString(name: String): HttpMethod
+    }
+}
+
+note as N_RestExtractor
+    **RestExtractor** (facade controller: only delegates)
+
+    ""record(call):""
+    ""  forall ns in namespaces:""
+    ""    if ns.record(call):""
+    ""      forall o in observers: o.callRecorded(ns)""
+    ""getReport(ns): return ns.createReport()""
+    ""removeNamespace(ns): namespaces.remove(ns); ns.stop()""
+
+    Remove and clear are passed on to the namespace the same way.
+end note
+
+note as N_ApiNamespace
+    **ApiNamespace** (Expert for origin and base path; both are checked only here)
+
+    ""ApiNamespace(baseUrl):""
+    ""  store it normalised: lower-case host, default""
+    ""  port filled in, no trailing slash""
+    ""  basePath = new UrlPath(path of baseUrl)""
+    ""record(call):""
+    ""  if not extracting: return false""
+    ""  url = URI of call.getUrl()""
+    ""  if not sameOrigin(url): return false""
+    ""  path = new UrlPath(raw path of url)""
+    ""  if not path.startsWith(basePath): return false""
+    ""  rest = path.after(basePath)""
+    ""  recorded = false""
+    ""  forall e in endpoints:""
+    ""    recorded = e.record(call, rest) or recorded""
+    ""  return recorded""
+
+    ""sameOrigin"": scheme equal, host equal ignoring case, port equal with 443/80 filled in.
+    ""removeEndpoint"", ""clearEndpoint"": ""/posts"" and ""/posts/"" are the same endpoint.
+    ""clear"" forgets the calls and keeps the endpoints and the running state.
+    All rules: US10 design, section 3.
+end note
+
+note as N_Endpoint
+    **Endpoint** (facade over its pattern and its calls)
+
+    ""record(call, path):""
+    ""  if not pattern.matches(path): return false""
+    ""  calls.add(new RecordedCall(call,""
+    ""                pattern.argumentsOf(path)))""
+    ""  return true""
+    ""clear(): calls.clear()  // reports made before keep theirs""
+    ""createReport():""
+    ""  return new EndpointReport(pattern.getTemplate(),""
+    ""    countCalls per method used, copy of calls)""
+
+    ""path"" is already the part after the base path. Arguments are computed
+    once, when the call is recorded.
+end note
+
+note as N_EndpointPattern
+    **EndpointPattern** (the matcher: only the path after the base path)
+
+    ""EndpointPattern(template):   // "/posts/[POST_ID]/comments"""
+    ""  forall part in new UrlPath(template):""
+    ""    [NAME] -> VariableSegment(NAME)""
+    ""    else   -> LiteralSegment(part)""
+    ""matches(path):""
+    ""  return path.size() == segments.size""
+    ""     and forall i: segments[i].matches(path.part(i))""
+    ""argumentsOf(path):""
+    ""  forall i: segments[i].addArgument(path.part(i), args)""
+    ""  return args""
+
+    The only ""[ ]"" check (Creator). Refused: no leading ""/"", ""[ ]"" inside a part,
+    the same ""[NAME]"" twice.
+end note
+
+note as N_UrlPath
+    **UrlPath** (immutable value object, Pure Fabrication): the one place for the
+    path rules, used for the base path, the templates and every request.
+
+    ""UrlPath(path):""
+    ""  drop one trailing "/", split on "/",""
+    ""  decode each part (%20 -> space)""
+    ""startsWith(prefix): first prefix.size() parts equal""
+    ""after(prefix):      new UrlPath of the remaining parts""
+
+    It only reads text; deciding (covers, matches) stays with the namespace and the pattern.
+end note
+
+note as N_LiteralSegment
+    **Segments**: no type check while matching. Package-private: only ""EndpointPattern"" uses them.
+
+    ""LiteralSegment.matches(p):  return text.equals(p)""
+    ""VariableSegment.matches(p): return not p.isEmpty()""
+    ""PathSegment.addArgument(p, args): nothing""
+    ""VariableSegment.addArgument(p, args):""
+    ""  args.put(name, p)""
+end note
+
+note as N_ApiReport
+    **ApiReport, EndpointReport**: the output of the domain, an immutable snapshot
+    (lists are copied), built by the experts on request. The writer never touches
+    live domain objects, and it reads one consistent state while proxy threads keep
+    recording. ""RecordedCall"" and ""ApiCall"" are immutable too, so the snapshot
+    can share them. ""EndpointReport"" counts the values seen per variable once, when
+    it is made (D16), e.g. ""POST_ID={1=3, abcd=1}"".
+end note
+
+' ============================================================ Relations
+' ZAP
+ExtensionRestExtraction -up-|> ExtensionAdaptor
+ExtensionRestExtraction .up.> ExtensionHook : <<use>>
+ExtensionRestExtraction .up.> ExtensionHookView : <<use>>
+RestTrafficListener .up.|> ProxyListener
+RestTrafficListener .up.> HttpMessage : <<use>>
+RestExtractionPanel -up-|> AbstractPanel
+
+' Extension wiring
+ExtensionRestExtraction --> "trafficListener 1" RestTrafficListener
+ExtensionRestExtraction --> "panel 1" RestExtractionPanel
+ExtensionRestExtraction --> "extractor 1" RestExtractor
+
+' Adapter and presentation to the domain
+RestTrafficListener --> "extractor 1" RestExtractor
+RestTrafficListener ..> ApiCall : <<create>>
+RestExtractionPanel --> "extractor 1" RestExtractor
+RestExtractionPanel --> "writer 1" ApiDocumentationWriter
+RestExtractionPanel --> "callModel 1" CallTableModel
+CallTableModel -up-|> AbstractTableModel
+CallTableModel ..> EndpointReport : <<use>>
+CallTableModel ..> RecordedCall : <<use>>
+RestExtractionPanel ..|> ExtractionObserver
+ApiDocumentationWriter ..> ApiReport : <<use>>
+
+' Domain
+RestExtractor --> "observers 0..*" ExtractionObserver
+RestExtractor "1" *-- "namespaces 0..*" ApiNamespace
+ApiNamespace "1" *-- "endpoints 0..* {ordered}" Endpoint
+ApiNamespace --> "basePath 1" UrlPath
+ApiNamespace ..> ApiReport : <<create>>
+Endpoint "1" *-- "pattern 1" EndpointPattern
+Endpoint "1" *-- "calls 0..*" RecordedCall
+Endpoint ..> EndpointReport : <<create>>
+EndpointPattern "1" *-- "segments 1..* {ordered}" PathSegment
+EndpointPattern .left.> UrlPath : <<use>>
+LiteralSegment -up-|> PathSegment
+VariableSegment -up-|> PathSegment
+ApiReport "1" *-- "endpoints 0..* {ordered}" EndpointReport
+EndpointReport --> "calls 0..*" RecordedCall
+RecordedCall --> "call 1" ApiCall
+
+' Notes stand on their own, as in the original. Hidden links only keep them in one column.
+N_Layers -[hidden]down- N_RestTrafficListener
+N_RestTrafficListener -[hidden]down- N_ApiDocumentationWriter
+N_ApiDocumentationWriter -[hidden]down- N_CallTableModel
+N_CallTableModel -[hidden]down- N_RestExtractor
+N_RestExtractor -[hidden]down- N_ApiReport
+N_ApiNamespace -[hidden]down- N_Endpoint
+N_Endpoint -[hidden]down- N_EndpointPattern
+N_EndpointPattern -[hidden]down- N_UrlPath
+N_UrlPath -[hidden]down- N_LiteralSegment
+@enduml

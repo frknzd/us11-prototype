@@ -49,8 +49,8 @@ is not allowed.</li>
 sensitive: <code>[id]</code> and <code>[ID]</code> are different.</li>
 <li>The path is case sensitive: <code>/Posts</code> is not <code>/posts</code>.</li>
 <li>One <code>/</code> at the end is ignored, in the pattern and in the calls.</li>
-<li>The query of a call is ignored: <code>/posts/1/comments?_limit=5</code> counts as
-<code>/posts/1/comments</code>.</li>
+<li>The query does not affect endpoint matching: <code>/posts/1/comments?_limit=5</code> matches
+<code>/posts/1/comments</code>. Its query arguments are captured and can be verified.</li>
 <li>Write a space in a fixed part as <code>%20</code>. Values are shown decoded, so
 <code>/users/John%20Doe</code> gives <code>John Doe</code>.</li>
 </ul>
@@ -127,5 +127,49 @@ traffic.</li>
 because APIs and patterns can only be added in this tab.</li>
 </ul>
 
+<H2>US11: define a specification</H2>
+Select an endpoint and open <b>Specification</b>. An empty specification is neutral: calls are not
+checked. Choose an item kind (Method, Content type, Path variable, Query parameter, Body field or
+Header), fill its fields and click <b>Add item</b>. Non-Method items automatically add their method.
+The item list has Edit and Remove; rejected changes keep the previous specification. Removing or
+changing a method with dependent items asks for confirmation.
+<p>Types are String, Integer, Decimal and Base64. Integer and Decimal have optional inclusive
+minimum/maximum bounds. Text numbers use ASCII digits, without trimming; JSON kinds are checked
+strictly. Decimal comparisons are exact. Query/body/header items can be Required; wildcard body
+fields and path variables cannot. Body fields on any method are allowed, with a hint for GET,
+HEAD and DELETE. Field names include <code>user.id</code>, <code>items[].id</code> and
+<code>scores{}</code>. Concrete keys take precedence over map wildcards.
+<p>Content types are checked only when declared. Extra query/body fields are checked only after
+that location has at least one declared item; headers are never extra. A malformed body is reported
+without a cascade of missing/extra errors. CORS preflight requests stay neutral.
+
+<H2>US11: inspect compliance</H2>
+The tree shows green check and red cross counts when an endpoint has a specification. Calls has a
+Check column and an Only invalid filter, composable with method and text filters. Select a call
+for Request, Checks and Response details. Full body applies to both request and response details.
+Request headers are displayed in full. Warnings are symbolic and do not invalidate requests.
+<p>Documentation shows each endpoint specification, compliance counts, violation totals and the
+same diagnostics as call details. Captured request information is included; response bodies remain
+excluded. All traffic text is escaped. Editing a specification rejudges calls already recorded;
+clearing calls keeps the spec, while removing the endpoint removes it. Specs are session-only and
+are never inferred from traffic or saved between sessions.
+
+<H2>US11: unmatched paths</H2>
+Select a namespace and open <b>Unmatched paths</b>, also available from its context menu. Paths
+covered by that running namespace but matching no pattern are counted separately. They never
+change main tree counts, verdicts or documentation. Select a path and choose Add endpoint pattern
+to toggle literal/variable chips and edit variable names before normal pattern validation.
+Unsafe literal parts start as variables; root/empty paths cannot become patterns. Adding a
+pattern does not erase unmatched counts. Clear in this panel affects only unmatched data; clearing
+a namespace also clears its unmatched data.
+
+<H2>Limits and safe local demonstration</H2>
+Bodies are retained up to 64 KB; binary bodies are marked. At most 200 arguments and 10 levels of
+JSON are extracted, with warnings for skipped data. Numeric values are limited to 10,000 characters,
+decimal exponent magnitude to 9,999, unmatched paths to 1,000 distinct entries plus overflow calls.
+The proxy listener always observes and never blocks or modifies requests or responses.
+<p>The private prototype includes a loopback-only fixture and a step-by-step walkthrough in
+<code>docs/demo-walkthrough.md</code>. It runs on its own profile/install and proxy port 8091;
+it does not change ZAP_D, port 8080, browser proxy settings or certificate trust.
 </BODY>
 </HTML>
